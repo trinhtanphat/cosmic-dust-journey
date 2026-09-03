@@ -1,0 +1,56 @@
+{
+  "name": "cosmic-dust-journey",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b --pretty false",
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:e2e": "playwright test",
+    "crawl:reference": "node scripts/crawl-reference.mjs",
+    "inspect:assets": "node scripts/inspect-public-assets.mjs",
+    "provenance": "node scripts/build-provenance-manifest.mjs",
+    "check": "npm run typecheck && npm run lint && npm run test:run && npm run build",
+    "test:core": "node --experimental-strip-types --test tests/core/*.test.ts",
+    "preview": "vite preview",
+    "check:core": "npm run test:core && node scripts/build-provenance-manifest.mjs"
+  },
+  "dependencies": {
+    "@react-three/fiber": "^9.7.0",
+    "gsap": "^3.15.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "three": "^0.185.1",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "@playwright/test": "^1.62.1",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^24.3.0",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "@types/three": "^0.185.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "eslint": "^9.35.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.3.0",
+    "jsdom": "^26.1.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.42.0",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
+  }
+}
