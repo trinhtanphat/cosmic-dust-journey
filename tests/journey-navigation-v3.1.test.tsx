@@ -48,7 +48,7 @@ describe('V3.1 journey navigation controller', () => {
     expect(target).not.toBeNull();
     expect(scrollTo).toHaveBeenCalledWith({
       top: (target ?? 0) * 2000,
-      behavior: 'auto',
+      behavior: 'instant',
     });
     expect(window.location.hash).toBe('#chapter-red-giant');
   });
@@ -108,7 +108,7 @@ describe('V3.1 journey navigation controller', () => {
 
     expect(result.current.mode).toBe('manual');
     expect(scrollTo).toHaveBeenCalledWith(
-      expect.objectContaining({ behavior: 'auto' }),
+      expect.objectContaining({ behavior: 'instant' }),
     );
   });
 
@@ -130,7 +130,7 @@ describe('V3.1 journey navigation controller', () => {
     act(() => frames.shift()?.(1000));
 
     const lastCall = scrollTo.mock.calls.at(-1)?.[0] as ScrollToOptions | undefined;
-    expect(lastCall?.behavior).toBe('auto');
+    expect(lastCall?.behavior).toBe('instant');
     expect(lastCall?.top).toBeGreaterThan(0);
   });
 
@@ -214,7 +214,7 @@ describe('V3.1 journey navigation controller', () => {
     act(() => vi.advanceTimersByTime(6000));
     expect(window.location.hash).toBe('#chapter-cold-cloud');
     expect(scrollTo).toHaveBeenLastCalledWith(
-      expect.objectContaining({ behavior: 'auto' }),
+      expect.objectContaining({ behavior: 'instant' }),
     );
 
     act(() => vi.advanceTimersByTime(6000 * 8));
