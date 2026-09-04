@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { chapters } from '../src/content/chapters';
 import ChapterSection from '../src/components/ChapterSection';
 import ExperienceShell from '../src/app/ExperienceShell';
+import { ObservabilityProvider } from '../src/observability/react';
 
 vi.mock('../src/experience/ExperienceCanvas', () => ({ default: () => <div data-testid="mock-canvas" /> }));
 vi.mock('../src/components/WebGLFallback', () => ({
@@ -49,7 +50,11 @@ describe('V2 narrative staging', () => {
   });
 
   it('exposes cinematic phase without removing keyboard reachable controls', () => {
-    const { container } = render(<ExperienceShell />);
+    const { container } = render(
+      <ObservabilityProvider>
+        <ExperienceShell />
+      </ObservabilityProvider>,
+    );
     const shell = container.querySelector('.experience-shell');
     expect(shell).toHaveAttribute('data-cinematic-phase');
     expect(screen.getByRole('link', { name: /skip to story/i })).toBeVisible();
