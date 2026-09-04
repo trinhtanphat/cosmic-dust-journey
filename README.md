@@ -1,10 +1,10 @@
 # Cosmic Dust Journey
 
-A production-oriented, clean-room interactive journey through the life of a star. V3.1 preserves the ten authored semantic chapters and V3.0 visual continuity while adding interruptible cinematic autoplay, shared guided chapter navigation, and canonical deep-links.
+A production-oriented, clean-room interactive journey through the life of a star. V3.2 preserves the V3.1 guided/autoplay experience and V3.0 visual continuity while adding deterministic visual capture evidence, structural capture validation, and persistent CI quality artifacts.
 
 - **A — Fidelity:** recognizable stellar-lifecycle pacing, chapter structure, scroll rhythm, and interaction semantics inspired only by publicly observable behavior.
 - **B — Visual continuity:** one deterministic matter/energy model, one continuous camera spline, continuity-aware scene overlap, shared stellar-surface evolution, bounded black-hole lensing, and adaptive post-processing.
-- **C — Production quality:** deterministic state, accessibility fallbacks, adaptive runtime quality, privacy-first observability, browser QA, guided/deep-link navigation, and static deploy support for GitHub Pages, Vercel, Cloudflare Pages, and Cloudflare Workers Static Assets.
+- **C — Production quality:** deterministic state, accessibility fallbacks, adaptive runtime quality, privacy-first observability, browser QA, guided/deep-link navigation, deterministic capture evidence, and static deploy support for GitHub Pages, Vercel, Cloudflare Pages, and Cloudflare Workers Static Assets.
 
 > This repository is a clean-room implementation. It does **not** recover, de-minify, copy, or redistribute proprietary JavaScript, GLSL, artwork, narrative copy, or audio from the reference experience.
 
@@ -48,6 +48,27 @@ The continuity model carries bounded semantic matter channels (`dust`, `gas`, `c
 V3.0 does **not** add a second renderer, frame loop, chapter timeline, or state store. Adaptive quality remains a hard budget: secondary volumetric layers and lensing detail can degrade, post-processing cannot be re-enabled after the runtime budget disables it, and primary narrative geometry/continuity remains intact. Reduced motion preserves the same material relationships while reducing camera tangent amplitude, turbulence, deformation, and black-hole warp.
 
 Boundary QA now covers all nine adjacent chapter transitions on desktop, representative material/branch boundaries on Pixel 7 emulation, and a reduced-motion boundary checkpoint. The V2.1 WebGL recovery contract remains one bounded restore attempt followed by session fallback on a second loss or timeout.
+
+## V3.2 capture & quality evidence
+
+V3.2 is a CI/test-tooling layer only. It does not add a runtime recorder, another renderer, another application store, video export, or checked-in pixel baselines.
+
+The deterministic capture matrix contains **23 checkpoints**:
+
+- desktop: all 10 chapter midpoint captures;
+- desktop: all 9 adjacent chapter-boundary captures;
+- mobile: 3 representative material/evolution/alternate-branch captures;
+- reduced motion: 1 representative boundary capture.
+
+Before each screenshot, test-only stabilization disables CSS animation/transition/caret noise, forces instant scroll behavior, waits for fonts, navigates through the existing semantic chapter geometry, and settles two animation frames. Production source fidelity is not modified to make screenshots stable.
+
+Each PNG is written under `v3.2-captures/<profile>/` with a per-profile manifest containing stable capture ID, chapter/boundary identity, reduced-motion flag, viewport and PNG dimensions, byte size, and SHA-256. The dependency-free Node validator requires the exact planned ID set, rejects missing/duplicate/unexpected or unsafe paths, verifies PNG signature/dimensions/size/SHA, and writes deterministic `capture-summary.json` plus `capture-summary.md`.
+
+```bash
+npm run capture:summary
+```
+
+CI runs the validator after browser QA and always uploads a dedicated `v3.2-capture-quality` artifact so evidence remains inspectable even when an earlier browser step fails. V3.2 is deliberately an **integrity and exact-coverage gate**, not a perceptual pixel-diff baseline gate; baseline storage/update policy can be introduced separately if a stable cross-runner contract is established.
 
 ## V3.1 guided journey experience
 
@@ -132,15 +153,16 @@ npm install
 npm run check
 ```
 
-Browser QA:
+Browser QA and evidence summaries:
 
 ```bash
 npx playwright install chromium
 npm run test:e2e
+npm run capture:summary
 npm run diagnostics:summary
 ```
 
-Playwright covers desktop, Pixel 7 emulation, reduced motion, V2 visual checkpoints, all V3 adjacent continuity boundaries on desktop, representative V3 mobile boundaries, V2.1 diagnostics, local-only telemetry, DNT/GPC suppression, WebGL startup fallback, bounded context recovery, audio-muted-before-click behavior, and V3.1 deep-link/guided/autoplay acceptance including Pause/Resume and manual takeover.
+Playwright covers desktop, Pixel 7 emulation, reduced motion, V2 visual checkpoints, all V3 adjacent continuity boundaries on desktop, representative V3 mobile boundaries, V2.1 diagnostics, local-only telemetry, DNT/GPC suppression, WebGL startup fallback, bounded context recovery, audio-muted-before-click behavior, V3.1 deep-link/guided/autoplay acceptance including Pause/Resume and manual takeover, and the V3.2 deterministic 23-checkpoint capture matrix with structural integrity validation.
 
 ## Development
 

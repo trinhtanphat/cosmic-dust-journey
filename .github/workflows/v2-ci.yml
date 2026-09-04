@@ -42,6 +42,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Browser and visual QA
         run: npm run test:e2e
+      - name: Summarize V3.2 captures
+        run: npm run capture:summary
       - name: Summarize V2.1 diagnostics
         run: npm run diagnostics:summary
       - name: Upload Playwright results
@@ -54,3 +56,10 @@ jobs:
             visual-checkpoints
             test-results
           if-no-files-found: ignore
+      - name: Upload V3.2 capture evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3.2-capture-quality
+          path: v3.2-captures
+          if-no-files-found: warn

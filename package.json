@@ -22,7 +22,8 @@
     "test:core": "node --experimental-strip-types --test tests/core/*.test.ts",
     "preview": "vite preview",
     "check:core": "npm run test:core && node scripts/build-provenance-manifest.mjs",
-    "diagnostics:summary": "node --experimental-strip-types scripts/write-performance-summary.mjs v2.1-diagnostics"
+    "diagnostics:summary": "node --experimental-strip-types scripts/write-performance-summary.mjs v2.1-diagnostics",
+    "capture:summary": "node --experimental-strip-types scripts/write-capture-summary.ts v3.2-captures"
   },
   "dependencies": {
     "@react-three/fiber": "^9.7.0",

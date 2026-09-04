@@ -2,6 +2,26 @@
 
 All notable changes to Cosmic Dust Journey are documented here.
 
+## 3.2.0 — 2026-09-04
+
+### Deterministic capture evidence
+- Added a stable 23-checkpoint V3.2 capture matrix: all 10 desktop chapter midpoints, all 9 adjacent desktop boundaries, 3 representative mobile captures, and 1 representative reduced-motion boundary.
+- Added test-only capture stabilization for instant scroll, disabled animation/transition/caret noise, font readiness, deterministic chapter geometry navigation, and bounded two-frame settling without changing production rendering behavior.
+- Added per-profile PNG manifests containing stable capture identity, chapter/boundary metadata, reduced-motion state, viewport/PNG dimensions, byte size, and SHA-256.
+
+### Capture integrity and quality gate
+- Added a dependency-free Node validator that requires the exact planned capture set and rejects missing, duplicate, unexpected, unsafe-path, corrupt/truncated PNG, byte-count, dimension, and SHA mismatches.
+- Added deterministic `capture-summary.json` and `capture-summary.md` outputs and a `npm run capture:summary` command that exits nonzero on structural evidence failures.
+- Kept V3.2 deliberately scoped to capture integrity and exact coverage rather than checked-in perceptual pixel baselines, avoiding runner/GPU/font-sensitive hard diffs without a dedicated baseline-update contract.
+
+### CI and regression protection
+- Added core guards for capture-plan determinism, validator fail-closed behavior, and V3.2 workflow wiring while preserving the existing V2.1 diagnostics/results artifact.
+- PR browser CI now runs the V3.2 summary after Playwright and always uploads a dedicated `v3.2-capture-quality` artifact, including evidence from failed browser runs when available.
+- Scoped the desktop 19-capture Playwright test to a bounded 90-second timeout while leaving the global 45-second timeout unchanged; this covers screenshot workload variance without weakening ordinary browser tests.
+- Existing V3.1 guided/autoplay/deep-link behavior, V3.0 continuity/camera/scene behavior, V2.1 recovery/privacy/diagnostics, and the authored ten-chapter content/order remain unchanged.
+
+> This changelog entry describes V3.2 source intended to merge through the normal branch/CI process. A Git tag or GitHub Release object must not be assumed unless it is created separately.
+
 ## 3.1.0 — 2026-09-04
 
 ### Guided journey and deep-links
