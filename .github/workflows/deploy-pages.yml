@@ -26,8 +26,11 @@ jobs:
         with:
           node-version: 22
 
+      - name: Upgrade npm
+        run: npm install -g npm@11 --no-audit --no-fund
+
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps --no-audit --no-fund
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
