@@ -140,7 +140,9 @@ describe('V3.1 journey navigation controller', () => {
       frames.push(callback);
       return frames.length;
     });
-    const cancelFrame = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+    const cancelFrame = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {
+      frames.shift();
+    });
     const { result } = renderHook(() => useJourneyNavigation());
 
     act(() => result.current.play());
