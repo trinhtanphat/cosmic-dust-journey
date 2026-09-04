@@ -38,7 +38,7 @@ export default function JourneyControls({
 
   return (
     <div className="journey-controls" aria-label="Journey controls">
-      <span className="journey-controls__status" role="status" aria-live="polite">
+      <span className="journey-controls__status" aria-live="polite" aria-atomic="true">
         {statusByMode[mode]}
       </span>
       <div className="journey-controls__actions">
