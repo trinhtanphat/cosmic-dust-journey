@@ -1,247 +1,222 @@
-# Ten Billion Years — Clean-room Interactive
+# Cosmic Dust Journey
 
-A production-oriented clean-room reimplementation of a cinematic star-lifecycle web experience. The project combines three deliverables in one repository:
+A production-oriented, clean-room interactive journey through the life of a star. V2 combines three goals in one codebase:
 
-- **A — Visual replica:** a React + WebGL scroll journey with procedural stellar scenes and pointer interactions.
-- **B — Public-data crawler:** a build-time inspection pipeline for public page copy, metadata, and asset URLs with provenance/status tracking; production never depends on it.
-- **C — Production architecture:** typed scene/timeline state, adaptive quality, accessibility fallbacks, tests, and deploy configs for Vercel + Cloudflare.
+- **A — Fidelity:** recognizable stellar-lifecycle pacing, chapter structure, scroll rhythm, and interaction semantics inspired only by publicly observable behavior.
+- **B — Visual upgrade:** newly authored cinematic camera tracks, richer procedural particles/shaders, scene-specific transitions, adaptive post-processing, and procedural sound.
+- **C — Production quality:** deterministic state, accessibility fallbacks, runtime quality adaptation, browser QA, and static deploy support for GitHub Pages, Vercel, Cloudflare Pages, and Cloudflare Workers Static Assets.
 
-> This repository does **not** recover, de-minify, or republish proprietary JavaScript from the reference experience. Visuals, shaders, interaction logic, narrative copy, and audio code here are newly authored. Remote assets discovered by the crawler default to `unknown-rights`; JavaScript bundles are catalogued as `inspect-only` and never treated as reusable source.
+> This repository is a clean-room implementation. It does **not** recover, de-minify, copy, or redistribute proprietary JavaScript, GLSL, artwork, narrative copy, or audio from the reference experience. Production visuals, shaders, interactions, copy, and sound code are newly authored.
 
 ## Stack
 
-- React 19
-- TypeScript
+- React 19 + TypeScript
 - Vite 8
-- Three.js + React Three Fiber
-- GSAP + ScrollTrigger
+- Three.js 0.185 + React Three Fiber 9
+- GSAP ScrollTrigger
 - Zustand
-- Vitest + Node core tests
-- Playwright browser smoke tests
+- Node core tests + Vitest
+- Playwright browser QA
+- Three.js built-in post-processing addons
+- Procedural WebAudio
 
-## Features
+## V2 cinematic architecture
 
-### Cinematic experience
+The narrative remains ten semantic DOM chapters over one persistent full-viewport WebGL canvas. Scroll resolves into chapter-local progress, then a data-driven cinematic director resolves four phases:
 
-- One persistent full-viewport R3F canvas.
-- Ten semantic narrative chapters.
-- Eight primary procedural scene phases:
-  1. dust cloud
-  2. gravitational collapse
-  3. fusion ignition
-  4. main sequence
-  5. red giant
-  6. planetary nebula / shedding
-  7. white dwarf
-  8. black-hole alternate ending
-- Crossfades between scene phases near chapter boundaries.
-- Adaptive particle budgets and DPR caps.
-- Pointer interactions mapped to scene semantics:
-  - dust click → pressure shockwave
-  - collapse pointer → local gravity
-  - main sequence pointer → radiation pressure
-  - black hole pointer → accretion-disk disturbance
-- Procedural shaders for particles, stellar surface/corona, and accretion disk.
-- Procedural ambient WebAudio soundscape; initial state is always muted.
-
-### Accessibility / resilience
-
-- Narrative is real DOM content, not rendered only into WebGL.
-- Keyboard-accessible sound toggle and journey navigation.
-- `prefers-reduced-motion` reduces camera/visual motion.
-- WebGL detection with narrative-mode fallback.
-- Mobile layout with reduced particle budget.
-
-### Clean-room crawler
-
-The crawler inspects public responses only. It extracts:
-
-- title / description metadata
-- headings and paragraphs
-- public button/label cue text
-- public asset URLs
-- script bundle URLs as `inspect-only`
-
-It does not turn minified bundles into project source and does not download unknown-rights assets into the repo automatically.
-
-## Requirements
-
-Vite 8 requires Node.js 20.19+ or 22.12+.
-
-```bash
-node --version
-npm --version
+```text
+enter -> settle -> interact -> transition
 ```
 
-## Local development
+Each chapter owns an explicit cinematic profile with camera keyframes, FOV intent, transition mode, interaction bounds, post-processing intent, and particle multiplier. Scene components remain rendering units; orchestration lives in `src/experience/`.
 
-```bash
-npm install
-npm run dev
-```
+### Chapter-specific camera choreography
 
-This archive intentionally has no generated `package-lock.json` because the build container could not reach the npm registry. The first successful `npm install` on a normal network will generate it; commit that lockfile before a production release.
+V2 replaces the V1 global camera drift with deterministic per-chapter tracks. The tracks cover wide dust entry, gravitational dolly-in, ignition framing, stable main-sequence composition, red-giant pullback, nebula reveal, quiet white-dwarf framing, and the low-angle accretion-disk route. Pointer input only adds bounded offsets and never changes narrative progress.
 
-Open the local Vite URL shown in the terminal.
+### Richer transitions
 
-## Tests
+V2 supports authored transition intents rather than crossfade-only changes:
 
-Core deterministic tests use Node's TypeScript stripping and can run without Vitest:
+- crossfade
+- density morph
+- radial collapse / expansion
+- shell ejection
+- ignition flash
+- dissolve-to-point
+- accretion warp
+
+Reduced-motion mode automatically falls back to lower-motion crossfade semantics without changing chapter timing.
+
+## Stellar scenes
+
+Eight procedural scene families power the ten chapters:
+
+1. dust cloud
+2. gravitational collapse
+3. fusion ignition
+4. main sequence
+5. red giant
+6. planetary nebula / shedding
+7. white dwarf
+8. black-hole alternate ending
+
+V2 adds multi-depth dust, spiral collapse, finite ignition flash, stellar surface turbulence, shell instability/ejection, compact-remnant glow, and a shader-authored lensing-like accretion treatment. The black-hole treatment is an artistic approximation, not physically exact general-relativistic ray tracing.
+
+## Scene-semantic interaction
+
+Pointer/click interaction is optional and bounded:
+
+- dust -> pressure shockwave
+- collapse -> local gravity
+- fusion -> ignition response
+- main sequence -> radiation pressure
+- red giant -> convection disturbance
+- nebula -> gas ripple
+- white dwarf -> glow response
+- black hole -> accretion-disk disturbance
+
+Interaction never blocks scrolling and never changes the scientific/narrative outcome.
+
+## Adaptive runtime quality
+
+Initial quality still considers screen size, device memory, CPU concurrency, DPR, and `prefers-reduced-motion`. V2 also observes frame time with hysteresis and can progressively reduce rendering cost without altering the story:
+
+1. post-processing
+2. particle budget
+3. DPR
+4. secondary layers / expensive shader branches
+
+Recovery is deliberately slower than downgrade to avoid oscillation.
+
+## Accessibility and reduced motion
+
+- Narrative content is real semantic DOM and remains readable without WebGL.
+- Sound starts muted and only begins after explicit user gesture.
+- `prefers-reduced-motion` selects dedicated lower-motion camera/transition behavior.
+- Mobile keeps bottom-weighted readable copy and reachable controls.
+- Critical information is never Canvas-only.
+- WebGL failure falls back to a readable narrative mode.
+
+## Procedural audio
+
+V2 keeps sound fully authored with WebAudio. Scene-aware envelopes adjust oscillator frequencies, filter, gain, and texture while sound is enabled. No remote audio asset is fetched, and updating a scene envelope while muted does not autoplay audio.
+
+## Tests and QA
+
+### Dependency-light core regressions
 
 ```bash
 npm run test:core
 ```
 
-Full unit suite after installing dependencies:
+These cover timeline/content, cinematic phase profiles, camera interpolation, transitions, interaction bounds, runtime-quality hysteresis, postFX intent, scene models, scene-aware audio, Playwright configuration, and GitHub Pages deployment invariants.
+
+### Full checks
 
 ```bash
-npm run test:run
+npm install
+npm run check
 ```
 
-Browser smoke test:
+`npm run check` runs TypeScript, ESLint, Vitest, and a production Vite build.
+
+### Browser QA
 
 ```bash
 npx playwright install chromium
 npm run test:e2e
 ```
 
-Full project gate:
+The V2 Playwright suite covers desktop, Pixel 7 mobile, reduced motion, the black-hole chapter, console/page errors, and eight human-review checkpoints:
 
-```bash
-npm run check
-```
+- `dust-settle.png`
+- `collapse-late.png`
+- `fusion-after.png`
+- `main-sequence-settle.png`
+- `red-giant-expanded.png`
+- `nebula-wide.png`
+- `white-dwarf.png`
+- `black-hole.png`
 
-That runs TypeScript, ESLint, Vitest, and the production Vite build.
+Screenshots are CI evidence for human review rather than committed pixel-perfect goldens.
 
-## Crawl public reference metadata
+## Development
 
-Default configured references:
-
-- `https://ten-billion-years.vercel.app/`
-- `https://dust.blue/`
-
-Run:
-
-```bash
-npm run crawl:reference
-```
-
-Or pass explicit public URLs:
-
-```bash
-node scripts/crawl-reference.mjs https://example.com/reference-a https://example.com/reference-b
-```
-
-Outputs:
+Node requirement:
 
 ```text
-public/generated/reference-content.json
-public/generated/provenance.json
+>=20.19.0 || >=22.12.0
 ```
 
-For reproducible crawl timestamps:
+Run locally:
 
 ```bash
-SOURCE_DATE_EPOCH=1788470400 npm run crawl:reference
+npm install
+npm run dev
 ```
 
-Inspect discovered non-script asset headers without downloading the assets:
-
-```bash
-npm run inspect:assets
-```
-
-Persist those observations into the provenance file:
-
-```bash
-node scripts/inspect-public-assets.mjs --write
-```
-
-## Deploy to Vercel
-
-The repository includes `vercel.json`.
-
-From the Vercel dashboard:
-
-1. Import the Git repository.
-2. Framework preset: **Vite**.
-3. Build command: `npm run build`.
-4. Output directory: `dist`.
-5. Deploy.
-
-CLI equivalent after installing the Vercel CLI:
+Production build:
 
 ```bash
 npm run build
-vercel --prod
 ```
 
-## Deploy to Cloudflare Pages
+Static output is written to `dist/`.
 
-Build settings:
+## Deploy
+
+### GitHub Pages
+
+`.github/workflows/deploy-pages.yml` builds the app with:
+
+```text
+VITE_BASE_PATH=/cosmic-dust-journey/
+```
+
+Before upload, the workflow runs the core regression suite and verifies that `dist/index.html` references `/cosmic-dust-journey/assets/` and does **not** contain `/src/main.tsx`.
+
+Live project path:
+
+```text
+https://trinhtanphat.github.io/cosmic-dust-journey/
+```
+
+### Vercel
+
+`vercel.json` uses `npm run build` and serves `dist/`. No `VITE_BASE_PATH` override is needed, so the normal Vite base remains `/`.
+
+### Cloudflare Pages
+
+Use:
 
 ```text
 Build command: npm run build
-Build output: dist
+Output directory: dist
 ```
 
-`public/_redirects` provides SPA fallback and `public/_headers` adds static security/cache headers.
+The normal root base `/` is retained.
 
-## Deploy to Cloudflare Workers Static Assets
+### Cloudflare Workers Static Assets
 
-`wrangler.toml` points Workers Assets at `./dist` with SPA fallback.
+`wrangler.toml` serves `./dist` with single-page-application fallback behavior. Build first with:
 
 ```bash
 npm run build
-npx wrangler deploy
 ```
 
-No server-side application code is required.
+## Reference inspection and provenance
 
-## Repository map
-
-```text
-src/
-  app/            React shell and quality selection
-  audio/          authored WebAudio ambient controller
-  components/     narrative UI, progress rail, sound/fallback
-  content/        typed local narrative model
-  experience/     normalized timeline, Zustand state, canvas/input
-  scenes/         procedural stellar phases
-  shaders/        authored GLSL
-  styles/         cinematic responsive CSS
-scripts/
-  crawl-reference.mjs
-  inspect-public-assets.mjs
-  build-provenance-manifest.mjs
-  lib/
-public/generated/ public crawl/provenance snapshots
-tests/core/       dependency-light deterministic tests
-tests/e2e/        Playwright full-scroll smoke test
-docs/superpowers/ design + implementation plan
-```
-
-## Clean-room / provenance rules
-
-1. Do not paste reference-site JavaScript bundles into `src/`.
-2. Do not de-minify a proprietary bundle and check the result in as source.
-3. Public page copy/metadata can be catalogued for analysis; production narrative in `src/content/chapters.ts` is newly authored.
-4. A discovered non-code asset stays `unknown-rights` until a human establishes redistribution rights.
-5. A discovered JavaScript bundle stays `inspect-only`.
-6. Production does not require the crawler or reference site at runtime.
-
-## Git history
-
-The provided full-repository archive contains the `.git` directory. To publish it after creating an empty repository:
+Reference crawling is offline/build-time tooling only. Production never depends on a reference site.
 
 ```bash
-git remote add origin https://github.com/trinhtanphat/cosmic-dust-journey.git
-git push -u origin feature/full-experience
-git push origin main
+npm run crawl:reference
+npm run inspect:assets
+npm run provenance
 ```
 
-You can merge the feature branch after reviewing the final diff.
+Remote JavaScript is `inspect-only`; unknown-rights assets are not treated as reusable production source.
 
-## License
+## Branch / release policy
 
-MIT for newly authored source only. Third-party material merely mentioned or catalogued in provenance files is not relicensed by this repository.
+V2 implementation lives on `feature/v2-cinematic-fidelity` until exact-head checks pass. PR CI runs the full static/unit check and Chromium browser suite. Merge to `main` is squash-only after applicable tests and visual-review checkpoints are green; no force/bypass merge is part of the workflow.

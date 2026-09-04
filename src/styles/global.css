@@ -134,3 +134,79 @@ main { position: relative; z-index: 4; }
   .grain { animation: none; }
   .sound-toggle, .progress-rail__dot, .progress-rail__label { transition: none; }
 }
+
+/* V2 cinematic narrative staging: scroll-derived only, never timer-driven. */
+.chapter__copy {
+  will-change: transform, opacity;
+  transition: opacity 420ms ease, transform 520ms cubic-bezier(.22,.76,.2,1);
+}
+.experience-shell[data-cinematic-phase="enter"] .chapter__copy {
+  opacity: .38;
+  transform: translate3d(0, 2.2rem, 0) scale(.985);
+}
+.experience-shell[data-cinematic-phase="settle"] .chapter__copy {
+  opacity: .92;
+  transform: translate3d(0, .3rem, 0) scale(.997);
+}
+.experience-shell[data-cinematic-phase="interact"] .chapter__copy {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+.experience-shell[data-cinematic-phase="transition"] .chapter__copy {
+  opacity: .56;
+  transform: translate3d(0, -1.4rem, 0) scale(.992);
+}
+
+.chapter__copy::before {
+  content: "";
+  display: block;
+  width: clamp(2.8rem, 5vw, 5.4rem);
+  height: 1px;
+  margin: 0 0 clamp(1.1rem, 2vw, 1.7rem);
+  background: linear-gradient(90deg, rgba(255,255,255,.62), rgba(255,255,255,0));
+}
+.chapter h2 {
+  max-width: 12ch;
+  font-size: clamp(3.4rem, 7.8vw, 8.7rem);
+  line-height: .86;
+}
+.chapter__body {
+  max-width: 52ch;
+  font-size: clamp(.98rem, 1.16vw, 1.18rem);
+}
+.chapter__cue {
+  padding-left: .9rem;
+  border-left: 1px solid rgba(255, 194, 133, .35);
+}
+
+@media (max-width: 760px) {
+  .chapter__sticky {
+    padding-left: max(1.15rem, env(safe-area-inset-left));
+    padding-right: max(1.15rem, env(safe-area-inset-right));
+    padding-bottom: max(12vh, calc(env(safe-area-inset-bottom) + 4.5rem));
+  }
+  .chapter h2 {
+    max-width: 11ch;
+    font-size: clamp(3rem, 13.6vw, 5.8rem);
+  }
+  .chapter__body { line-height: 1.62; }
+  .chapter__cue { max-width: 36ch; }
+  .vignette {
+    background:
+      linear-gradient(180deg, rgba(2,3,8,.08), transparent 35%, rgba(2,3,8,.78) 100%),
+      radial-gradient(circle at 50% 38%, transparent 0 25%, rgba(1,2,6,.18) 62%, rgba(1,2,6,.58) 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chapter__copy,
+  .experience-shell[data-cinematic-phase="enter"] .chapter__copy,
+  .experience-shell[data-cinematic-phase="settle"] .chapter__copy,
+  .experience-shell[data-cinematic-phase="interact"] .chapter__copy,
+  .experience-shell[data-cinematic-phase="transition"] .chapter__copy {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    will-change: auto;
+  }
+}

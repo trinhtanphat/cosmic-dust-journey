@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 import { chapters } from '../content/chapters';
 import type { SceneId } from '../content/types';
+import type { CinematicState } from '../experience/cinematicState';
 import { useExperienceStore } from '../experience/store';
 import BlackHoleScene from './BlackHoleScene';
 import CollapseScene from './CollapseScene';
@@ -24,12 +25,7 @@ const components: Record<SceneId, ComponentType<SceneProps>> = {
   'black-hole': BlackHoleScene,
 };
 
-const smoothstep = (t: number) => {
-  const x = Math.min(1, Math.max(0, t));
-  return x * x * (3 - 2 * x);
-};
-
-export default function SceneDirector() {
+export default function SceneDirector({ cinematicState }: { cinematicState: CinematicState }) {
   const chapterIndex = useExperienceStore((state) => state.chapterIndex);
   const progress = useExperienceStore((state) => state.localProgress);
   const quality = useExperienceStore((state) => state.quality);
@@ -39,17 +35,42 @@ export default function SceneDirector() {
   const nextChapter = chapters[Math.min(chapters.length - 1, chapterIndex + 1)] ?? chapter;
   const currentScene = chapter.scene;
   const nextScene = nextChapter.scene;
-  const transition = currentScene === nextScene ? 0 : smoothstep((progress - 0.76) / 0.24);
+  const { transition, budget, profile } = cinematicState;
+  const adaptedQuality = {
+    ...quality,
+    dpr: budget.dpr,
+    particleBudget: Math.max(1200, Math.floor(budget.particleBudget * profile.particleMultiplier)),
+    postprocessing: budget.postprocessing,
+  };
   const Current = components[currentScene];
-  const Next = components[nextScene];
-  const currentModel = sceneModel(currentScene, progress, quality);
-  const nextModel = sceneModel(nextScene, Math.max(0, (progress - 0.76) / 0.24), quality);
+  const currentModel = sceneModel(currentScene, progress, adaptedQuality);
 
+  if (currentScene === nextScene) {
+    return <Current model={currentModel} progress={progress} opacity={1} pointer={pointer} impulse={impulse} cinematic={transition} />;
+  }
+
+  const Next = components[nextScene];
+  const incomingProgress = transition.amount;
+  const nextModel = sceneModel(nextScene, incomingProgress, adaptedQuality);
   return (
     <>
-      <Current model={currentModel} progress={progress} opacity={1 - transition} pointer={pointer} impulse={impulse} />
-      {transition > 0.001 && (
-        <Next model={nextModel} progress={Math.max(0, (progress - 0.76) / 0.24)} opacity={transition} pointer={pointer} impulse={impulse} />
+      <Current
+        model={currentModel}
+        progress={progress}
+        opacity={transition.outgoingOpacity}
+        pointer={pointer}
+        impulse={impulse}
+        cinematic={transition}
+      />
+      {transition.incomingOpacity > 0.001 && (
+        <Next
+          model={nextModel}
+          progress={incomingProgress}
+          opacity={transition.incomingOpacity}
+          pointer={pointer}
+          impulse={impulse}
+          cinematic={transition}
+        />
       )}
     </>
   );

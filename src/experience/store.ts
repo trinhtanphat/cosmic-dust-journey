@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { QualityProfile } from '../app/quality';
 import type { InteractionKind } from './interactions';
+import type { AdaptiveLevel } from './runtimeQuality';
 import { chapterTimeline } from './chapterRegistry';
 import { locateProgress } from './timeline';
 
@@ -24,11 +25,13 @@ interface ExperienceState {
   impulse: LiveImpulse;
   soundEnabled: boolean;
   quality: QualityProfile;
+  adaptiveLevel: AdaptiveLevel;
   setGlobalProgress(progress: number): void;
   setPointer(pointer: PointerState): void;
   setImpulse(impulse: LiveImpulse): void;
   setSoundEnabled(enabled: boolean): void;
   setQuality(quality: QualityProfile): void;
+  setAdaptiveLevel(level: AdaptiveLevel): void;
 }
 
 const initialLocation = locateProgress(chapterTimeline, 0);
@@ -42,6 +45,7 @@ export const useExperienceStore = create<ExperienceState>((set) => ({
   impulse: { kind: 'none', strength: 0, at: 0 },
   soundEnabled: false,
   quality: { tier: 'medium', dpr: 1, particleBudget: 28000, reducedMotion: false, postprocessing: false },
+  adaptiveLevel: 0,
   setGlobalProgress(progress) {
     const located = locateProgress(chapterTimeline, progress);
     set({
@@ -55,4 +59,5 @@ export const useExperienceStore = create<ExperienceState>((set) => ({
   setImpulse: (impulse) => set({ impulse }),
   setSoundEnabled: (soundEnabled) => set({ soundEnabled }),
   setQuality: (quality) => set({ quality }),
+  setAdaptiveLevel: (adaptiveLevel) => set({ adaptiveLevel }),
 }));

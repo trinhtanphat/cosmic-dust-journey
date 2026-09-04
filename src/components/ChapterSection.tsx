@@ -9,6 +9,7 @@ export default function ChapterSection({ chapter, index }: { chapter: Chapter; i
       className={`chapter chapter--${chapter.scene}`}
       data-chapter-id={chapter.id}
       data-chapter-index={index}
+      data-scene-id={chapter.scene}
       style={style}
       aria-labelledby={`chapter-title-${chapter.id}`}
     >

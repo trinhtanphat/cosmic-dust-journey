@@ -9,6 +9,9 @@ interface StellarCoreProps {
   opacity: number;
   hue: number;
   corona?: number;
+  turbulence?: number;
+  flash?: number;
+  qualityScale?: number;
 }
 
 function palette(hue: number) {
@@ -17,7 +20,16 @@ function palette(hue: number) {
   return { core, edge };
 }
 
-export default function StellarCore({ radius, intensity, opacity, hue, corona = 0 }: StellarCoreProps) {
+export default function StellarCore({
+  radius,
+  intensity,
+  opacity,
+  hue,
+  corona = 0,
+  turbulence = 0.35,
+  flash = 0,
+  qualityScale = 1,
+}: StellarCoreProps) {
   const material = useRef<THREE.ShaderMaterial>(null);
   const colors = useMemo(() => palette(hue), [hue]);
   const uniforms = useMemo(() => ({
@@ -26,20 +38,28 @@ export default function StellarCore({ radius, intensity, opacity, hue, corona = 
     uCoreColor: { value: colors.core },
     uEdgeColor: { value: colors.edge },
     uOpacity: { value: opacity },
-  }), [colors, intensity, opacity]);
+    uTurbulence: { value: turbulence },
+    uFlash: { value: flash },
+    uQualityScale: { value: qualityScale },
+  }), [colors, flash, intensity, opacity, qualityScale, turbulence]);
+  const detail = qualityScale < 0.7 ? 4 : 5;
+  const segments = qualityScale < 0.7 ? 32 : 48;
 
   useFrame(({ clock }) => {
     if (!material.current) return;
     material.current.uniforms.uTime.value = clock.elapsedTime;
     material.current.uniforms.uIntensity.value = intensity;
     material.current.uniforms.uOpacity.value = opacity;
+    material.current.uniforms.uTurbulence.value = turbulence;
+    material.current.uniforms.uFlash.value = flash;
+    material.current.uniforms.uQualityScale.value = qualityScale;
   });
 
   if (radius <= 0.01 || opacity <= 0.001) return null;
   return (
     <group scale={radius}>
       <mesh>
-        <icosahedronGeometry args={[1, 5]} />
+        <icosahedronGeometry args={[1, detail]} />
         <shaderMaterial
           ref={material}
           transparent
@@ -50,19 +70,19 @@ export default function StellarCore({ radius, intensity, opacity, hue, corona = 
         />
       </mesh>
       {corona > 0 && (
-        <mesh scale={1 + corona * 0.22}>
-          <sphereGeometry args={[1, 48, 48]} />
+        <mesh scale={1 + corona * 0.22 + flash * 0.08}>
+          <sphereGeometry args={[1, segments, segments]} />
           <meshBasicMaterial
             color={colors.edge}
             transparent
-            opacity={Math.min(0.17, corona * 0.09) * opacity}
+            opacity={Math.min(0.2, corona * 0.09 + flash * 0.08) * opacity}
             depthWrite={false}
             blending={THREE.AdditiveBlending}
             side={THREE.BackSide}
           />
         </mesh>
       )}
-      <pointLight intensity={Math.min(90, intensity * 13)} distance={40} decay={1.5} color={colors.core} />
+      <pointLight intensity={Math.min(100, intensity * 13 + flash * 24)} distance={40} decay={1.5} color={colors.core} />
     </group>
   );
 }
