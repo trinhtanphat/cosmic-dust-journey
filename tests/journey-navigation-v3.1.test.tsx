@@ -7,6 +7,7 @@ import { useExperienceStore } from '../src/experience/store';
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.restoreAllMocks();
   window.history.replaceState(null, '', '/');
 });
@@ -109,5 +110,114 @@ describe('V3.1 journey navigation controller', () => {
     expect(scrollTo).toHaveBeenCalledWith(
       expect.objectContaining({ behavior: 'auto' }),
     );
+  });
+
+  it('drives ordinary autoplay with one delta-time requestAnimationFrame loop', () => {
+    const frames: FrameRequestCallback[] = [];
+    const requestFrame = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+    const { result } = renderHook(() => useJourneyNavigation());
+    scrollTo.mockClear();
+
+    act(() => result.current.play());
+    expect(result.current.mode).toBe('playing');
+    expect(requestFrame).toHaveBeenCalledTimes(1);
+
+    act(() => frames.shift()?.(0));
+    act(() => frames.shift()?.(1000));
+
+    const lastCall = scrollTo.mock.calls.at(-1)?.[0] as ScrollToOptions | undefined;
+    expect(lastCall?.behavior).toBe('auto');
+    expect(lastCall?.top).toBeGreaterThan(0);
+  });
+
+  it('pauses the autoplay loop and resumes from live store progress', () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const cancelFrame = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+    const { result } = renderHook(() => useJourneyNavigation());
+
+    act(() => result.current.play());
+    act(() => frames.shift()?.(0));
+    act(() => frames.shift()?.(1000));
+    act(() => result.current.pause());
+
+    expect(result.current.mode).toBe('paused');
+    expect(cancelFrame).toHaveBeenCalled();
+
+    act(() => useExperienceStore.getState().setGlobalProgress(0.4));
+    scrollTo.mockClear();
+    act(() => result.current.resume());
+    act(() => frames.shift()?.(2000));
+    act(() => frames.shift()?.(3000));
+
+    const resumedCall = scrollTo.mock.calls.at(-1)?.[0] as ScrollToOptions | undefined;
+    expect(result.current.mode).toBe('playing');
+    expect(resumedCall?.top).toBeGreaterThan(800);
+  });
+
+  it('relinquishes autoplay immediately to wheel, touch, and navigation-key intent', () => {
+    const requestFrame = vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+    const { result } = renderHook(() => useJourneyNavigation());
+
+    act(() => result.current.play());
+    expect(requestFrame).toHaveBeenCalled();
+    act(() => window.dispatchEvent(new WheelEvent('wheel')));
+    expect(result.current.mode).toBe('manual');
+
+    act(() => result.current.play());
+    act(() => window.dispatchEvent(new TouchEvent('touchstart')));
+    expect(result.current.mode).toBe('manual');
+
+    act(() => result.current.play());
+    act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' })));
+    expect(result.current.mode).toBe('manual');
+  });
+
+  it('does not treat programmatic scroll or editable keyboard input as takeover', () => {
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+    const { result } = renderHook(() => useJourneyNavigation());
+
+    act(() => result.current.play());
+    act(() => window.dispatchEvent(new Event('scroll')));
+    expect(result.current.mode).toBe('playing');
+
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })));
+    expect(result.current.mode).toBe('playing');
+    input.remove();
+  });
+
+  it('uses bounded chapter-step autoplay under reduced motion and never starts rAF scrolling', () => {
+    vi.useFakeTimers();
+    const requestFrame = vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
+    const quality = useExperienceStore.getState().quality;
+    useExperienceStore.getState().setQuality({ ...quality, reducedMotion: true });
+    const { result } = renderHook(() => useJourneyNavigation());
+    scrollTo.mockClear();
+
+    act(() => result.current.play());
+    expect(result.current.mode).toBe('playing');
+    expect(requestFrame).not.toHaveBeenCalled();
+
+    act(() => vi.advanceTimersByTime(6000));
+    expect(window.location.hash).toBe('#chapter-cold-cloud');
+    expect(scrollTo).toHaveBeenLastCalledWith(
+      expect.objectContaining({ behavior: 'auto' }),
+    );
+
+    act(() => vi.advanceTimersByTime(6000 * 8));
+    expect(window.location.hash).toBe('#chapter-epilogue');
+    expect(result.current.mode).toBe('completed');
+    expect(requestFrame).not.toHaveBeenCalled();
   });
 });
