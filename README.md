@@ -1,10 +1,10 @@
 # Cosmic Dust Journey
 
-A production-oriented, clean-room interactive journey through the life of a star. V2 combines three goals in one codebase:
+A production-oriented, clean-room interactive journey through the life of a star. V3 preserves the ten authored semantic chapters while evolving the V2/V2.1 renderer into one visually continuous stellar lifecycle.
 
 - **A — Fidelity:** recognizable stellar-lifecycle pacing, chapter structure, scroll rhythm, and interaction semantics inspired only by publicly observable behavior.
-- **B — Visual upgrade:** newly authored cinematic camera tracks, richer procedural particles/shaders, scene-specific transitions, adaptive post-processing, and procedural sound.
-- **C — Production quality:** deterministic state, accessibility fallbacks, adaptive runtime quality, browser QA, and static deploy support for GitHub Pages, Vercel, Cloudflare Pages, and Cloudflare Workers Static Assets.
+- **B — Visual continuity:** one deterministic matter/energy model, one continuous camera spline, continuity-aware scene overlap, shared stellar-surface evolution, bounded black-hole lensing, and adaptive post-processing.
+- **C — Production quality:** deterministic state, accessibility fallbacks, adaptive runtime quality, privacy-first observability, browser QA, and static deploy support for GitHub Pages, Vercel, Cloudflare Pages, and Cloudflare Workers Static Assets.
 
 > This repository is a clean-room implementation. It does **not** recover, de-minify, copy, or redistribute proprietary JavaScript, GLSL, artwork, narrative copy, or audio from the reference experience.
 
@@ -30,9 +30,28 @@ enter -> settle -> interact -> transition
 
 Each chapter owns camera keyframes, FOV intent, transition mode, bounded interaction, post-processing intent, and particle budget. Reduced-motion preserves the narrative timing while selecting a lower-motion route.
 
+## V3.0 visual continuity core
+
+V3.0 keeps the same ten chapter IDs, order, scenes, scientific copy, accessibility fallback, and V2.1 recovery/observability contracts. It adds a pure continuity layer between chapter progress and rendering:
+
+```text
+chapter progress
+  -> resolveVisualContinuity
+  -> resolveCinematicState + continuity energy
+  -> sampleGlobalCameraSpline
+  -> SceneDirector
+  -> current + next scene only
+```
+
+The continuity model carries bounded semantic matter channels (`dust`, `gas`, `core`, `envelope`, `ejecta`, `remnant`, `accretion`) instead of tracking literal particle identity. Dust/collapse/nebula layers reuse deterministic seeded structure and progress-authored motion; main-sequence and red-giant share a stellar-surface vocabulary; the black-hole chapter consumes only `accretion` and deliberately rejects white-dwarf `remnant` as physical transfer.
+
+V3.0 does **not** add a second renderer, frame loop, chapter timeline, or state store. Adaptive quality remains a hard budget: secondary volumetric layers and lensing detail can degrade, post-processing cannot be re-enabled after the runtime budget disables it, and primary narrative geometry/continuity remains intact. Reduced motion preserves the same material relationships while reducing camera tangent amplitude, turbulence, deformation, and black-hole warp.
+
+Boundary QA now covers all nine adjacent chapter transitions on desktop, representative material/branch boundaries on Pixel 7 emulation, and a reduced-motion boundary checkpoint. The V2.1 WebGL recovery contract remains one bounded restore attempt followed by session fallback on a second loss or timeout.
+
 ## V2.1 production hardening
 
-V2.1 adds a provider-neutral observability and recovery layer without changing the authored V2 cinematic semantics.
+V2.1 adds a provider-neutral observability and recovery layer without changing the authored cinematic semantics.
 
 ### Privacy-first default
 
@@ -63,29 +82,11 @@ Copy `.env.example` and provide deployment values only where needed. Do not comm
 
 ### Performance diagnostics
 
-The existing React Three Fiber frame callback remains the **single authoritative frame stream**. The same sample feeds adaptive-quality hysteresis and local diagnostics; V2.1 does not create a second FPS loop.
+The existing React Three Fiber frame callback remains the **single authoritative frame stream**. The same sample feeds adaptive-quality hysteresis and local diagnostics; observability does not create a second FPS loop.
 
-Diagnostics aggregate:
+Diagnostics aggregate frame percentiles, long tasks, adaptive-level timing, WebGL loss/restore/fallback counts, runtime errors, audio lifecycle counts, visited chapters, and supported heap-growth data.
 
-- frame p50/p95/p99, max, and percentage over 50 ms;
-- long-task counts and maximum duration;
-- adaptive-quality transitions and time at each level;
-- WebGL loss/restore/fallback counts;
-- runtime error and unhandled-rejection counts;
-- audio lifecycle counts;
-- visited chapters;
-- heap growth when Chromium exposes a supported API.
-
-CI writes:
-
-```text
-v2.1-diagnostics/
-  chromium-desktop/performance-diagnostics.json
-  chromium-mobile/performance-diagnostics.json
-  performance-summary.md
-```
-
-Stable runtime failures fail CI. Frame-time and ordinary long-task targets are reported as warnings when runner noise makes them unsuitable as brittle hard gates.
+CI writes diagnostics under `v2.1-diagnostics/` for desktop/mobile plus `performance-summary.md`. Stable runtime failures fail CI; ordinary runner-sensitive frame targets remain warnings.
 
 ### Renderer and WebGL recovery
 
@@ -118,7 +119,7 @@ npm run test:e2e
 npm run diagnostics:summary
 ```
 
-Playwright covers desktop, Pixel 7 emulation, reduced motion, the original eight V2 visual checkpoints, V2.1 diagnostics, local-only telemetry, DNT/GPC suppression, WebGL startup fallback, bounded context recovery, and audio-muted-before-click behavior.
+Playwright covers desktop, Pixel 7 emulation, reduced motion, V2 visual checkpoints, all V3 adjacent continuity boundaries on desktop, representative V3 mobile boundaries, V2.1 diagnostics, local-only telemetry, DNT/GPC suppression, WebGL startup fallback, bounded context recovery, and audio-muted-before-click behavior.
 
 ## Development
 
