@@ -3,22 +3,46 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import { resolveCinematicState } from '../src/experience/cinematicState';
 import { useExperienceStore } from '../src/experience/store';
 
-const sceneStub = (scene: string) => (props: { opacity?: number; continuity?: { blend: { transfer: number } } }) => (
-  <div
-    data-testid={`scene-${scene}`}
-    data-opacity={String(props.opacity ?? 1)}
-    data-transfer={props.continuity ? String(props.continuity.blend.transfer) : 'missing'}
-  />
-);
-
-vi.mock('../src/scenes/DustCloudScene', () => ({ default: sceneStub('dust') }));
-vi.mock('../src/scenes/CollapseScene', () => ({ default: sceneStub('collapse') }));
-vi.mock('../src/scenes/FusionScene', () => ({ default: sceneStub('fusion') }));
-vi.mock('../src/scenes/MainSequenceScene', () => ({ default: sceneStub('main-sequence') }));
-vi.mock('../src/scenes/RedGiantScene', () => ({ default: sceneStub('red-giant') }));
-vi.mock('../src/scenes/NebulaScene', () => ({ default: sceneStub('nebula') }));
-vi.mock('../src/scenes/WhiteDwarfScene', () => ({ default: sceneStub('white-dwarf') }));
-vi.mock('../src/scenes/BlackHoleScene', () => ({ default: sceneStub('black-hole') }));
+vi.mock('../src/scenes/DustCloudScene', () => ({
+  default: (props: { opacity?: number; continuity?: { blend: { transfer: number } } }) => (
+    <div data-testid="scene-dust" data-opacity={String(props.opacity ?? 1)} data-transfer={props.continuity ? String(props.continuity.blend.transfer) : 'missing'} />
+  ),
+}));
+vi.mock('../src/scenes/CollapseScene', () => ({
+  default: (props: { opacity?: number; continuity?: { blend: { transfer: number } } }) => (
+    <div data-testid="scene-collapse" data-opacity={String(props.opacity ?? 1)} data-transfer={props.continuity ? String(props.continuity.blend.transfer) : 'missing'} />
+  ),
+}));
+vi.mock('../src/scenes/FusionScene', () => ({
+  default: (props: { opacity?: number; continuity?: { blend: { transfer: number } } }) => (
+    <div data-testid="scene-fusion" data-opacity={String(props.opacity ?? 1)} data-transfer={props.continuity ? String(props.continuity.blend.transfer) : 'missing'} />
+  ),
+}));
+vi.mock('../src/scenes/MainSequenceScene', () => ({
+  default: (props: { opacity?: number; continuity?: { blend: { transfer: number } } }) => (
+    <div data-testid="scene-main-sequence" data-opacity={String(props.opacity ?? 1)} data-transfer={props.continuity ? String(props.continuity.blend.transfer) : 'missing'} />
+  ),
+}));
+vi.mock('../src/scenes/RedGiantScene', () => ({
+  default: (props: { opacity?: number; continuity?: { blend: { transfer: number } } }) => (
+    <div data-testid="scene-red-giant" data-opacity={String(props.opacity ?? 1)} data-transfer={props.continuity ? String(props.continuity.blend.transfer) : 'missing'} />
+  ),
+}));
+vi.mock('../src/scenes/NebulaScene', () => ({
+  default: (props: { opacity?: number; continuity?: { blend: { transfer: number } } }) => (
+    <div data-testid="scene-nebula" data-opacity={String(props.opacity ?? 1)} data-transfer={props.continuity ? String(props.continuity.blend.transfer) : 'missing'} />
+  ),
+}));
+vi.mock('../src/scenes/WhiteDwarfScene', () => ({
+  default: (props: { opacity?: number; continuity?: { blend: { transfer: number } } }) => (
+    <div data-testid="scene-white-dwarf" data-opacity={String(props.opacity ?? 1)} data-transfer={props.continuity ? String(props.continuity.blend.transfer) : 'missing'} />
+  ),
+}));
+vi.mock('../src/scenes/BlackHoleScene', () => ({
+  default: (props: { opacity?: number; continuity?: { blend: { transfer: number } } }) => (
+    <div data-testid="scene-black-hole" data-opacity={String(props.opacity ?? 1)} data-transfer={props.continuity ? String(props.continuity.blend.transfer) : 'missing'} />
+  ),
+}));
 
 import SceneDirector from '../src/scenes/SceneDirector';
 
@@ -32,8 +56,8 @@ function renderAt(chapterIndex: number, localProgress: number) {
     pointer: { x: 0, y: 0 },
     impulse: { kind: 'none', strength: 0, at: 0 },
   });
-  const chapterIds = ['overture','cold-cloud','collapse','ignition','main-sequence','red-giant','shedding','white-dwarf','elsewhere','epilogue'];
-  const sceneIds = ['dust','dust','collapse','fusion','main-sequence','red-giant','nebula','white-dwarf','black-hole','dust'] as const;
+  const chapterIds = ['overture', 'cold-cloud', 'collapse', 'ignition', 'main-sequence', 'red-giant', 'shedding', 'white-dwarf', 'elsewhere', 'epilogue'];
+  const sceneIds = ['dust', 'dust', 'collapse', 'fusion', 'main-sequence', 'red-giant', 'nebula', 'white-dwarf', 'black-hole', 'dust'] as const;
   const cinematicState = resolveCinematicState({
     chapterId: chapterIds[chapterIndex],
     scene: sceneIds[chapterIndex],
