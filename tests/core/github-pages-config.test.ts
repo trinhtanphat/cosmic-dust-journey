@@ -12,6 +12,9 @@ test('GitHub Pages deploy builds Vite output instead of serving TSX source', () 
   assert.match(workflow, /npm run build/);
   assert.match(workflow, /path:\s*dist/);
   assert.match(workflow, /actions\/deploy-pages@v4/);
+  assert.match(workflow, /Verify Pages artifact/);
+  assert.match(workflow, /grep -q ['"]\/cosmic-dust-journey\/assets\/['"] dist\/index\.html/);
+  assert.match(workflow, /! grep -q ['"]\/src\/main\.tsx['"] dist\/index\.html/);
 });
 
 test('GitHub Pages build uses a repository base path while other hosts default to root', () => {
