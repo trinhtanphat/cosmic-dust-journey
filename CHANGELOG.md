@@ -2,6 +2,32 @@
 
 All notable changes to Cosmic Dust Journey are documented here.
 
+## 3.0.0 — 2026-09-04
+
+### Visual continuity core
+- Added deterministic semantic matter continuity across the ten existing authored chapters without changing chapter IDs, order, scenes, or scientific copy.
+- Added one globally continuous camera spline with bounded pointer influence and reduced-motion tangent scaling.
+- Made `SceneDirector` continuity-aware while keeping normal rendering bounded to the current and next scene families.
+- Upgraded dust, collapse, nebula, and white-dwarf rendering with deterministic layered volumetric continuity rather than chapter-boundary resets.
+- Unified main-sequence and red-giant stellar-surface intent so radius, luminosity, temperature/hue, turbulence, and limb glow evolve from the same authored model.
+
+### Bounded black-hole branch
+- Added bounded center-decaying lensing intent and asymmetric accretion-disk brightness/temperature treatment without ray marching or a second renderer.
+- Adaptive quality disables secondary distortion before primary silhouette/motion, and reduced motion lowers warp amplitude.
+- The alternate black-hole chapter consumes only `accretion`; white-dwarf `remnant` is explicitly not treated as physical transfer into the black-hole system.
+
+### Energy, pacing, and recovery
+- Routed continuity bloom/exposure/chromatic energy through the existing runtime post-processing budget; continuity cannot re-enable post-processing after adaptive quality disables it.
+- Tuned only chapter `scrollLength` values for cinematic pacing while preserving the authored narrative snapshot.
+- Hardened WebGL recovery remount timing so the one-restore-then-fallback contract remains deterministic across a remounted canvas.
+
+### QA
+- Added deterministic V3 unit coverage for continuity, global camera boundaries, SceneDirector propagation, volumetric transfer, stellar-surface evolution, black-hole branch isolation, pacing, and post-processing budget behavior.
+- Added Playwright screenshots at all nine adjacent desktop boundaries, representative mobile material/branch boundaries, and a reduced-motion boundary checkpoint.
+- Existing V2.1 privacy, diagnostics, WebGL fallback/recovery, and narrative-DOM coverage remain part of the full browser gate.
+
+> This changelog entry describes the V3.0 source merged through the normal branch/CI process. A Git tag or GitHub Release object must not be assumed unless it is created separately.
+
 ## 2.1.0 — 2026-09-04
 
 ### Production observability

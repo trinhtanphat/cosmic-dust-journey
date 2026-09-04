@@ -7,11 +7,13 @@ import { useObservability } from '../observability/react';
 import SceneDirector from '../scenes/SceneDirector';
 import StarField from '../scenes/StarField';
 import type { CameraPose } from './cameraTrack';
+import { sampleGlobalCameraSpline } from './cameraSpline';
 import { resolveCinematicState } from './cinematicState';
 import { interactionImpulse } from './interactions';
 import PostProcessingRig from './PostProcessingRig';
 import { createRuntimeQualityState } from './runtimeQuality';
 import { useExperienceStore } from './store';
+import { resolveVisualContinuity } from './visualContinuity';
 import WebGLRecoveryBoundary from './WebGLRecoveryBoundary';
 
 function FrameQualityProbe() {
@@ -62,6 +64,7 @@ export default function ExperienceCanvas({
   const setImpulse = useExperienceStore((state) => state.setImpulse);
   const chapter = chapters[Math.max(0, chapterIndex)] ?? chapters[0];
   const scene = chapter?.scene ?? 'dust';
+  const continuity = resolveVisualContinuity({ chapterIndex, localProgress, reducedMotion: quality.reducedMotion });
   const cinematicState = resolveCinematicState({
     chapterId: chapter?.id ?? 'overture',
     scene,
@@ -69,6 +72,13 @@ export default function ExperienceCanvas({
     pointer,
     quality,
     adaptiveLevel,
+    continuity,
+  });
+  const cameraPose = sampleGlobalCameraSpline({
+    chapterIndex,
+    localProgress,
+    pointer,
+    reducedMotion: quality.reducedMotion,
   });
   const qualityScale = Math.max(0.35, Math.min(1, cinematicState.budget.particleBudget / 64000));
 
@@ -104,7 +114,7 @@ export default function ExperienceCanvas({
           />
           <FrameQualityProbe />
           <SceneDirector cinematicState={cinematicState} />
-          <CameraRig pose={cinematicState.camera} reducedMotion={quality.reducedMotion} />
+          <CameraRig pose={cameraPose} reducedMotion={quality.reducedMotion} />
           <PostProcessingRig state={cinematicState.postFx} />
         </Suspense>
       </Canvas>
