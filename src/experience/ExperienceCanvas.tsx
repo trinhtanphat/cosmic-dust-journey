@@ -2,21 +2,25 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { Suspense, useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import * as THREE from 'three';
 import { chapters } from '../content/chapters';
+import { observeRuntimeFrame } from '../observability/frame';
+import { useObservability } from '../observability/react';
 import SceneDirector from '../scenes/SceneDirector';
 import StarField from '../scenes/StarField';
 import type { CameraPose } from './cameraTrack';
 import { resolveCinematicState } from './cinematicState';
 import { interactionImpulse } from './interactions';
 import PostProcessingRig from './PostProcessingRig';
-import { createRuntimeQualityState, observeFrame } from './runtimeQuality';
+import { createRuntimeQualityState } from './runtimeQuality';
 import { useExperienceStore } from './store';
+import WebGLRecoveryBoundary from './WebGLRecoveryBoundary';
 
 function FrameQualityProbe() {
   const setAdaptiveLevel = useExperienceStore((state) => state.setAdaptiveLevel);
+  const observability = useObservability();
   const runtime = useRef(createRuntimeQualityState());
   useFrame((_, delta) => {
     const previous = runtime.current;
-    const next = observeFrame(previous, delta * 1000);
+    const next = observeRuntimeFrame(previous, delta * 1000, observability);
     runtime.current = next;
     if (next.level !== previous.level) setAdaptiveLevel(next.level);
   });
@@ -42,7 +46,13 @@ function CameraRig({ pose, reducedMotion }: { pose: CameraPose; reducedMotion: b
   return null;
 }
 
-export default function ExperienceCanvas() {
+export default function ExperienceCanvas({
+  onContextLost = () => undefined,
+  onContextRestored = () => undefined,
+}: {
+  onContextLost?: () => void;
+  onContextRestored?: () => void;
+} = {}) {
   const quality = useExperienceStore((state) => state.quality);
   const chapterIndex = useExperienceStore((state) => state.chapterIndex);
   const adaptiveLevel = useExperienceStore((state) => state.adaptiveLevel);
@@ -86,6 +96,7 @@ export default function ExperienceCanvas() {
       >
         <color attach="background" args={['#020308']} />
         <fog attach="fog" args={['#020308', 14, 58]} />
+        <WebGLRecoveryBoundary onContextLost={onContextLost} onContextRestored={onContextRestored} />
         <Suspense fallback={null}>
           <StarField
             count={cinematicState.budget.secondaryLayers ? (quality.tier === 'low' ? 500 : 1200) : 320}
