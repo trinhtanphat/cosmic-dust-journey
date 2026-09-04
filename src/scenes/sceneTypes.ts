@@ -1,3 +1,4 @@
+import type { VisualContinuityState } from '../experience/visualContinuity';
 import type { LiveImpulse, PointerState } from '../experience/store';
 import type { TransitionState } from '../experience/transitions';
 import type { SceneVisualModel } from './sceneModel';
@@ -9,4 +10,5 @@ export interface SceneProps {
   pointer: PointerState;
   impulse: LiveImpulse;
   cinematic: TransitionState;
+  continuity?: VisualContinuityState;
 }
