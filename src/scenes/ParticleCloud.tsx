@@ -1,8 +1,8 @@
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { particleFragmentShader, particleVertexShader } from '../shaders/particleMaterial';
 import type { InteractionKind } from '../experience/interactions';
+import { particleFragmentShader, particleVertexShader } from '../shaders/particleMaterial';
 
 interface ParticleCloudProps {
   count: number;
@@ -17,6 +17,7 @@ interface ParticleCloudProps {
   densityMorph?: number;
   radialMotion?: number;
   layerDepth?: number;
+  phase?: number;
 }
 
 const modeFor = (kind: InteractionKind) => ({
@@ -39,6 +40,9 @@ function randomFactory(seed: number) {
   };
 }
 
+const normalizedPhase = (phase: number | undefined) =>
+  phase === undefined ? undefined : Math.min(1, Math.max(0, Number.isFinite(phase) ? phase : 0));
+
 export default function ParticleCloud({
   count,
   spread,
@@ -52,6 +56,7 @@ export default function ParticleCloud({
   densityMorph = 1,
   radialMotion = 0,
   layerDepth = 0,
+  phase,
 }: ParticleCloudProps) {
   const material = useRef<THREE.ShaderMaterial>(null);
   const points = useRef<THREE.Points>(null);
@@ -60,7 +65,7 @@ export default function ParticleCloud({
     const safeCount = Math.max(1, Math.floor(count));
     const positions = new Float32Array(safeCount * 3);
     const seeds = new Float32Array(safeCount);
-    for (let i = 0; i < safeCount; i++) {
+    for (let i = 0; i < safeCount; i += 1) {
       const radius = Math.cbrt(random());
       const theta = random() * Math.PI * 2;
       const phi = Math.acos(2 * random() - 1);
@@ -91,8 +96,9 @@ export default function ParticleCloud({
 
   useFrame(({ clock }, delta) => {
     if (!material.current) return;
+    const authoredPhase = normalizedPhase(phase);
     const ageSeconds = Math.max(0, (Date.now() - impulse.at) / 1000);
-    material.current.uniforms.uTime.value = clock.elapsedTime;
+    material.current.uniforms.uTime.value = authoredPhase === undefined ? clock.elapsedTime : authoredPhase * 4;
     material.current.uniforms.uSpread.value = spread;
     material.current.uniforms.uOpacity.value = opacity;
     material.current.uniforms.uDensityMorph.value = densityMorph;
@@ -101,7 +107,10 @@ export default function ParticleCloud({
     material.current.uniforms.uImpulse.value = impulse.strength * Math.exp(-ageSeconds * 1.9);
     material.current.uniforms.uMode.value = modeFor(impulse.kind);
     material.current.uniforms.uPointer.value.set(pointer.x, pointer.y);
-    if (points.current) points.current.rotation.y += delta * rotationSpeed;
+    if (points.current) {
+      if (authoredPhase === undefined) points.current.rotation.y += delta * rotationSpeed;
+      else points.current.rotation.y = authoredPhase * rotationSpeed * 4;
+    }
   });
 
   return (
