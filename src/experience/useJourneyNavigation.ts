@@ -20,13 +20,15 @@ import { useExperienceStore } from './store';
 export const AUTOPLAY_TOTAL_DURATION_MS = 120_000;
 export const REDUCED_MOTION_CHAPTER_HOLD_MS = 6_000;
 
+type JourneyScrollBehavior = 'instant' | 'smooth';
+
 const chapterIds = chapters.map((chapter) => chapter.id);
 const navigationKeys = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
 
 type NavigationHistory = 'none' | 'push' | 'replace';
 
 interface NavigateOptions {
-  behavior: ScrollBehavior;
+  behavior: JourneyScrollBehavior;
   history: NavigationHistory;
   takeover: boolean;
 }
@@ -65,7 +67,7 @@ export function useJourneyNavigation(): JourneyNavigationController {
     setPlayback((state) => reducePlayback(state, event));
   }, []);
 
-  const scrollToProgress = useCallback((progress: number, behavior: ScrollBehavior) => {
+  const scrollToProgress = useCallback((progress: number, behavior: JourneyScrollBehavior) => {
     window.scrollTo({
       top: progressToScrollY(progress, documentScrollHeight(), window.innerHeight),
       behavior,
@@ -92,7 +94,7 @@ export function useJourneyNavigation(): JourneyNavigationController {
 
   const goToChapter = useCallback((targetChapterId: string) => {
     navigateToChapter(targetChapterId, {
-      behavior: reducedMotion ? 'auto' : 'smooth',
+      behavior: reducedMotion ? 'instant' : 'smooth',
       history: 'push',
       takeover: true,
     });
@@ -115,7 +117,7 @@ export function useJourneyNavigation(): JourneyNavigationController {
       pendingChapterRef.current = chapters[0].id;
       const hash = canonicalChapterHash(chapters[0].id);
       window.history.replaceState(null, '', hash);
-      scrollToProgress(0, 'auto');
+      scrollToProgress(0, 'instant');
     }
     dispatch('play');
   }, [dispatch, playback.mode, scrollToProgress]);
@@ -127,7 +129,7 @@ export function useJourneyNavigation(): JourneyNavigationController {
     const targetChapterId = chapterIdFromHash(window.location.hash, chapterIds);
     if (!targetChapterId) return;
     navigateToChapter(targetChapterId, {
-      behavior: 'auto',
+      behavior: 'instant',
       history: 'none',
       takeover: false,
     });
@@ -138,7 +140,7 @@ export function useJourneyNavigation(): JourneyNavigationController {
       const targetChapterId = chapterIdFromHash(window.location.hash, chapterIds);
       if (!targetChapterId) return;
       navigateToChapter(targetChapterId, {
-        behavior: 'auto',
+        behavior: 'instant',
         history: 'none',
         takeover: true,
       });
@@ -176,7 +178,7 @@ export function useJourneyNavigation(): JourneyNavigationController {
       const deltaMs = previousTimestamp === null ? 0 : Math.max(0, timestamp - previousTimestamp);
       previousTimestamp = timestamp;
       progress = advancePlaybackProgress(progress, deltaMs, AUTOPLAY_TOTAL_DURATION_MS);
-      scrollToProgress(progress, 'auto');
+      scrollToProgress(progress, 'instant');
 
       if (progress >= 1) {
         dispatch('complete');
@@ -210,7 +212,7 @@ export function useJourneyNavigation(): JourneyNavigationController {
 
         currentIndex = targetIndex;
         navigateToChapter(chapters[currentIndex].id, {
-          behavior: 'auto',
+          behavior: 'instant',
           history: 'replace',
           takeover: false,
         });
