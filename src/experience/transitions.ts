@@ -62,7 +62,5 @@ export function resolveTransition(
       return { ...base, radialScale: clamp01(1 - amount * 0.95), densityScale: clamp01(1 - amount * 0.82) };
     case 'accretion-warp':
       return { ...base, warp: amount, radialScale: clamp01(0.65 + amount * 0.35) };
-    case 'crossfade':
-      return base;
   }
 }

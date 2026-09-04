@@ -38,6 +38,5 @@ export function interactionImpulse(
     case 'nebula': return bounded('gas-ripple', 0.28 + p * 0.48);
     case 'white-dwarf': return bounded('dwarf-glow', 0.18 + p * 0.28);
     case 'black-hole': return bounded('disk-disturbance', 0.4 + p * 0.4);
-    case 'dust': return bounded('none', 0);
   }
 }
