@@ -1,8 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import JourneyControls from '../src/components/JourneyControls';
 import ProgressRail from '../src/components/ProgressRail';
 import { useExperienceStore } from '../src/experience/store';
+
+afterEach(() => cleanup());
 
 describe('V3.1 guided journey controls', () => {
   beforeEach(() => {
@@ -13,7 +15,9 @@ describe('V3.1 guided journey controls', () => {
     const onNavigate = vi.fn();
     render(<ProgressRail onNavigate={onNavigate} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /go to cold cloud/i }));
+    fireEvent.click(
+      screen.getByRole('button', { name: /go to a cloud starts to remember its center/i }),
+    );
 
     expect(onNavigate).toHaveBeenCalledTimes(1);
     expect(onNavigate).toHaveBeenCalledWith('cold-cloud');
