@@ -41,6 +41,13 @@ describe('V2 narrative staging', () => {
     expect(section).toHaveClass('chapter--main-sequence');
   });
 
+  it('gives the nebula title an explicit readable foreground color', () => {
+    const chapter = chapters.find((candidate) => candidate.scene === 'nebula');
+    expect(chapter).toBeDefined();
+    render(<ChapterSection chapter={chapter!} index={6} />);
+    expect(screen.getByRole('heading', { name: chapter!.title })).toHaveStyle('color: #f3efff');
+  });
+
   it('exposes cinematic phase without removing keyboard reachable controls', () => {
     const { container } = render(<ExperienceShell />);
     const shell = container.querySelector('.experience-shell');
