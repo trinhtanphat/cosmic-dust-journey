@@ -6,5 +6,6 @@ test('narrative exports ten valid unique chapters', async () => {
   const validation = await import('../../src/content/validate.ts').catch(() => ({ validateChapters: () => ['missing'] }));
   assert.equal(content.chapters.length, 10);
   assert.deepEqual(validation.validateChapters(content.chapters), []);
-  assert.equal(new Set(content.chapters.map((chapter: any) => chapter.id)).size, 10);
+  const chapterIds = (content.chapters as readonly { id: string }[]).map((chapter) => chapter.id);
+  assert.equal(new Set(chapterIds).size, 10);
 });

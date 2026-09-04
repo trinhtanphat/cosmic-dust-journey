@@ -14,14 +14,21 @@ interface ParticleCloudProps {
   impulse: { kind: InteractionKind; strength: number; at: number };
   seed?: number;
   rotationSpeed?: number;
+  densityMorph?: number;
+  radialMotion?: number;
+  layerDepth?: number;
 }
 
 const modeFor = (kind: InteractionKind) => ({
   shockwave: 0,
   gravity: 1,
-  radiation: 2,
-  'disk-disturbance': 3,
-  none: 4,
+  ignition: 2,
+  radiation: 3,
+  convection: 4,
+  'gas-ripple': 5,
+  'dwarf-glow': 6,
+  'disk-disturbance': 7,
+  none: 8,
 }[kind]);
 
 function randomFactory(seed: number) {
@@ -42,14 +49,18 @@ export default function ParticleCloud({
   impulse,
   seed = 1776,
   rotationSpeed = 0.025,
+  densityMorph = 1,
+  radialMotion = 0,
+  layerDepth = 0,
 }: ParticleCloudProps) {
   const material = useRef<THREE.ShaderMaterial>(null);
   const points = useRef<THREE.Points>(null);
   const geometry = useMemo(() => {
     const random = randomFactory(seed);
-    const positions = new Float32Array(count * 3);
-    const seeds = new Float32Array(count);
-    for (let i = 0; i < count; i += 1) {
+    const safeCount = Math.max(1, Math.floor(count));
+    const positions = new Float32Array(safeCount * 3);
+    const seeds = new Float32Array(safeCount);
+    for (let i = 0; i < safeCount; i++) {
       const radius = Math.cbrt(random());
       const theta = random() * Math.PI * 2;
       const phi = Math.acos(2 * random() - 1);
@@ -70,10 +81,13 @@ export default function ParticleCloud({
     uPointSize: { value: pointSize },
     uImpulse: { value: 0 },
     uPointer: { value: new THREE.Vector2() },
-    uMode: { value: 4 },
+    uMode: { value: 8 },
     uTint: { value: new THREE.Color(tint) },
     uOpacity: { value: opacity },
-  }), [opacity, pointSize, spread, tint]);
+    uDensityMorph: { value: densityMorph },
+    uRadialMotion: { value: radialMotion },
+    uLayerDepth: { value: layerDepth },
+  }), [densityMorph, layerDepth, opacity, pointSize, radialMotion, spread, tint]);
 
   useFrame(({ clock }, delta) => {
     if (!material.current) return;
@@ -81,6 +95,9 @@ export default function ParticleCloud({
     material.current.uniforms.uTime.value = clock.elapsedTime;
     material.current.uniforms.uSpread.value = spread;
     material.current.uniforms.uOpacity.value = opacity;
+    material.current.uniforms.uDensityMorph.value = densityMorph;
+    material.current.uniforms.uRadialMotion.value = radialMotion;
+    material.current.uniforms.uLayerDepth.value = layerDepth;
     material.current.uniforms.uImpulse.value = impulse.strength * Math.exp(-ageSeconds * 1.9);
     material.current.uniforms.uMode.value = modeFor(impulse.kind);
     material.current.uniforms.uPointer.value.set(pointer.x, pointer.y);

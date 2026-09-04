@@ -9,12 +9,16 @@ import WebGLFallback, { supportsWebGL } from '../components/WebGLFallback';
 import ExperienceCanvas from '../experience/ExperienceCanvas';
 import { detectBrowserQuality } from './quality';
 import { useExperienceStore } from '../experience/store';
+import { cinematicProfileFor, resolveCinematicPhase } from '../experience/cinematic';
 
 export default function ExperienceShell() {
   const setGlobalProgress = useExperienceStore((state) => state.setGlobalProgress);
   const setQuality = useExperienceStore((state) => state.setQuality);
   const activeId = useExperienceStore((state) => state.chapterId);
+  const localProgress = useExperienceStore((state) => state.localProgress);
+  const reducedMotion = useExperienceStore((state) => state.quality.reducedMotion);
   const [webgl, setWebgl] = useState(true);
+  const cinematicPhase = resolveCinematicPhase(cinematicProfileFor(activeId || 'overture'), localProgress).phase;
 
   useEffect(() => {
     setWebgl(supportsWebGL());
@@ -56,7 +60,7 @@ export default function ExperienceShell() {
   }, [setGlobalProgress]);
 
   return (
-    <div className="experience-shell" data-active-chapter={activeId}>
+    <div className="experience-shell" data-active-chapter={activeId} data-cinematic-phase={cinematicPhase} data-reduced-motion={reducedMotion ? 'true' : 'false'}>
       <a href="#journey" className="skip-link">Skip to story</a>
       <div className="brand-mark" aria-label="Ten Billion Years">
         <span>10</span>
