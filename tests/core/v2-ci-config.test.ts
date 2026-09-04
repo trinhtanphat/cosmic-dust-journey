@@ -11,4 +11,5 @@ test('V2 PR CI runs full check and browser suite without changing Pages deployme
   assert.match(workflow, /npm run check/);
   assert.match(workflow, /playwright install --with-deps chromium/);
   assert.match(workflow, /npm run test:e2e/);
+  assert.match(workflow, /visual-checkpoints/);
 });

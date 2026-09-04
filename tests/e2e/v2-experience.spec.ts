@@ -1,3 +1,5 @@
+import { mkdir } from 'node:fs/promises';
+import { join } from 'node:path';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
 function captureBreakingErrors(page: Page) {
@@ -22,8 +24,10 @@ async function goToChapter(page: Page, id: string, fraction = 0.55) {
 }
 
 async function attachCheckpoint(page: Page, testInfo: TestInfo, name: string) {
-  const body = await page.screenshot({ animations: 'disabled' });
-  await testInfo.attach(name, { body, contentType: 'image/png' });
+  await mkdir('visual-checkpoints', { recursive: true });
+  const path = join('visual-checkpoints', name);
+  await page.screenshot({ path, animations: 'disabled' });
+  await testInfo.attach(name, { path, contentType: 'image/png' });
 }
 
 test('desktop V2 journey reaches every phase and captures visual checkpoints', async ({ page }, testInfo) => {

@@ -57,5 +57,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: v2-playwright-results
-          path: test-results
+          path: |
+            visual-checkpoints
+            test-results
           if-no-files-found: ignore
