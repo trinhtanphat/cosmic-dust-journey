@@ -3,12 +3,14 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { chapters } from '../content/chapters';
 import ChapterSection from '../components/ChapterSection';
+import JourneyControls from '../components/JourneyControls';
 import ProgressRail from '../components/ProgressRail';
 import RuntimeErrorBoundary from '../components/RuntimeErrorBoundary';
 import SoundToggle from '../components/SoundToggle';
 import WebGLFallback, { supportsWebGL } from '../components/WebGLFallback';
 import ExperienceCanvas from '../experience/ExperienceCanvas';
 import { cinematicProfileFor, resolveCinematicPhase } from '../experience/cinematic';
+import { useJourneyNavigation } from '../experience/useJourneyNavigation';
 import { createWebGLRecoveryState, reduceWebGLRecovery } from '../experience/webglRecovery';
 import { useExperienceStore } from '../experience/store';
 import { classifyRuntimeError } from '../observability/errors';
@@ -21,8 +23,10 @@ export default function ExperienceShell() {
   const setGlobalProgress = useExperienceStore((state) => state.setGlobalProgress);
   const setQuality = useExperienceStore((state) => state.setQuality);
   const activeId = useExperienceStore((state) => state.chapterId);
+  const chapterIndex = useExperienceStore((state) => state.chapterIndex);
   const localProgress = useExperienceStore((state) => state.localProgress);
   const reducedMotion = useExperienceStore((state) => state.quality.reducedMotion);
+  const navigation = useJourneyNavigation();
   const observability = useObservability();
   const [webgl, setWebgl] = useState(true);
   const [recovery, setRecovery] = useState(createWebGLRecoveryState);
@@ -131,7 +135,17 @@ export default function ExperienceShell() {
         <span>YEARS</span>
       </div>
       <SoundToggle />
-      <ProgressRail />
+      <JourneyControls
+        mode={navigation.mode}
+        canPrevious={chapterIndex > 0}
+        canNext={chapterIndex < chapters.length - 1}
+        onPlay={navigation.play}
+        onPause={navigation.pause}
+        onResume={navigation.resume}
+        onPrevious={navigation.previous}
+        onNext={navigation.next}
+      />
+      <ProgressRail onNavigate={navigation.goToChapter} />
       {renderer}
       <div className="vignette" aria-hidden="true" />
       <div className="grain" aria-hidden="true" />

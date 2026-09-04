@@ -1,10 +1,10 @@
 # Cosmic Dust Journey
 
-A production-oriented, clean-room interactive journey through the life of a star. V3 preserves the ten authored semantic chapters while evolving the V2/V2.1 renderer into one visually continuous stellar lifecycle.
+A production-oriented, clean-room interactive journey through the life of a star. V3.1 preserves the ten authored semantic chapters and V3.0 visual continuity while adding interruptible cinematic autoplay, shared guided chapter navigation, and canonical deep-links.
 
 - **A — Fidelity:** recognizable stellar-lifecycle pacing, chapter structure, scroll rhythm, and interaction semantics inspired only by publicly observable behavior.
 - **B — Visual continuity:** one deterministic matter/energy model, one continuous camera spline, continuity-aware scene overlap, shared stellar-surface evolution, bounded black-hole lensing, and adaptive post-processing.
-- **C — Production quality:** deterministic state, accessibility fallbacks, adaptive runtime quality, privacy-first observability, browser QA, and static deploy support for GitHub Pages, Vercel, Cloudflare Pages, and Cloudflare Workers Static Assets.
+- **C — Production quality:** deterministic state, accessibility fallbacks, adaptive runtime quality, privacy-first observability, browser QA, guided/deep-link navigation, and static deploy support for GitHub Pages, Vercel, Cloudflare Pages, and Cloudflare Workers Static Assets.
 
 > This repository is a clean-room implementation. It does **not** recover, de-minify, copy, or redistribute proprietary JavaScript, GLSL, artwork, narrative copy, or audio from the reference experience.
 
@@ -48,6 +48,27 @@ The continuity model carries bounded semantic matter channels (`dust`, `gas`, `c
 V3.0 does **not** add a second renderer, frame loop, chapter timeline, or state store. Adaptive quality remains a hard budget: secondary volumetric layers and lensing detail can degrade, post-processing cannot be re-enabled after the runtime budget disables it, and primary narrative geometry/continuity remains intact. Reduced motion preserves the same material relationships while reducing camera tangent amplitude, turbulence, deformation, and black-hole warp.
 
 Boundary QA now covers all nine adjacent chapter transitions on desktop, representative material/branch boundaries on Pixel 7 emulation, and a reduced-motion boundary checkpoint. The V2.1 WebGL recovery contract remains one bounded restore attempt followed by session fallback on a second loss or timeout.
+
+## V3.1 guided journey experience
+
+V3.1 adds one DOM-facing journey-navigation controller on top of the existing scroll/store/continuity pipeline. It does not create a second timeline or replace V3.0 rendering.
+
+Canonical shareable chapter links use the existing semantic DOM IDs:
+
+```text
+#chapter-overture
+#chapter-cold-cloud
+...
+#chapter-epilogue
+```
+
+Known hashes hydrate through the shared controller; malformed or unknown hashes fail closed. ProgressRail, Previous/Next, browser hash changes, and autoplay all resolve through the same authoritative chapter timeline.
+
+Autoplay is **opt-in**. Play starts cinematic scrolling from the current journey position, Pause freezes programmatic advancement, and Resume continues from live progress. A completed journey can restart from the beginning. Explicit user intent always wins: wheel, touch, and supported navigation keys immediately return control to manual scrolling. Programmatic `scroll` events are not treated as takeover signals.
+
+Reduced-motion never uses continuous rAF auto-scroll. If the user explicitly starts autoplay with reduced motion enabled, the controller advances one chapter at a time with bounded instant jumps while preserving Pause/Resume and takeover semantics.
+
+The journey controls are compact semantic buttons with visible focus treatment and a polite live status. They deliberately avoid reusing the generic `role="status"` already owned by the WebGL fallback, so existing recovery/accessibility locators remain unique.
 
 ## V2.1 production hardening
 
@@ -119,7 +140,7 @@ npm run test:e2e
 npm run diagnostics:summary
 ```
 
-Playwright covers desktop, Pixel 7 emulation, reduced motion, V2 visual checkpoints, all V3 adjacent continuity boundaries on desktop, representative V3 mobile boundaries, V2.1 diagnostics, local-only telemetry, DNT/GPC suppression, WebGL startup fallback, bounded context recovery, and audio-muted-before-click behavior.
+Playwright covers desktop, Pixel 7 emulation, reduced motion, V2 visual checkpoints, all V3 adjacent continuity boundaries on desktop, representative V3 mobile boundaries, V2.1 diagnostics, local-only telemetry, DNT/GPC suppression, WebGL startup fallback, bounded context recovery, audio-muted-before-click behavior, and V3.1 deep-link/guided/autoplay acceptance including Pause/Resume and manual takeover.
 
 ## Development
 
