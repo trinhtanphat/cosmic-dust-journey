@@ -16,7 +16,12 @@ export default function ChapterSection({ chapter, index }: { chapter: Chapter; i
       <div className="chapter__sticky">
         <div className="chapter__copy">
           <p className="chapter__eyebrow">{chapter.eyebrow}</p>
-          <h2 id={`chapter-title-${chapter.id}`}>{chapter.title}</h2>
+          <h2
+            id={`chapter-title-${chapter.id}`}
+            style={chapter.scene === 'nebula' ? { color: '#f3efff' } : undefined}
+          >
+            {chapter.title}
+          </h2>
           <p className="chapter__body">{chapter.body}</p>
           {chapter.interactionCue && <p className="chapter__cue">{chapter.interactionCue}</p>}
           <p className="chapter__clock">{chapter.clockLabel}</p>
