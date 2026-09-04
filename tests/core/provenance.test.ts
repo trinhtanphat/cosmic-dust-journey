@@ -8,6 +8,9 @@ test('provenance manifest is deterministic and URL-sorted', async () => {
     { url: 'https://b.test/z', status: 'unknown-rights' },
     { url: 'https://a.test/a', status: 'inspect-only' },
   ]);
-  assert.deepEqual(manifest.entries.map((entry: any) => entry.url), ['https://a.test/a', 'https://b.test/z']);
+  assert.deepEqual(
+    manifest.entries.map((entry: { url: string }) => entry.url),
+    ['https://a.test/a', 'https://b.test/z'],
+  );
   assert.equal(manifest.version, 1);
 });
