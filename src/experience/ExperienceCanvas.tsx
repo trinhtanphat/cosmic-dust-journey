@@ -7,6 +7,7 @@ import { useObservability } from '../observability/react';
 import SceneDirector from '../scenes/SceneDirector';
 import StarField from '../scenes/StarField';
 import type { CameraPose } from './cameraTrack';
+import { sampleGlobalCameraSpline } from './cameraSpline';
 import { resolveCinematicState } from './cinematicState';
 import { interactionImpulse } from './interactions';
 import PostProcessingRig from './PostProcessingRig';
@@ -70,6 +71,12 @@ export default function ExperienceCanvas({
     quality,
     adaptiveLevel,
   });
+  const cameraPose = sampleGlobalCameraSpline({
+    chapterIndex,
+    localProgress,
+    pointer,
+    reducedMotion: quality.reducedMotion,
+  });
   const qualityScale = Math.max(0.35, Math.min(1, cinematicState.budget.particleBudget / 64000));
 
   const updatePointer = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -104,7 +111,7 @@ export default function ExperienceCanvas({
           />
           <FrameQualityProbe />
           <SceneDirector cinematicState={cinematicState} />
-          <CameraRig pose={cinematicState.camera} reducedMotion={quality.reducedMotion} />
+          <CameraRig pose={cameraPose} reducedMotion={quality.reducedMotion} />
           <PostProcessingRig state={cinematicState.postFx} />
         </Suspense>
       </Canvas>
