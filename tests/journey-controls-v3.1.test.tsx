@@ -23,7 +23,7 @@ describe('V3.1 guided journey controls', () => {
     expect(onNavigate).toHaveBeenCalledWith('cold-cloud');
   });
 
-  it('renders Play in manual mode with an accessible manual status', () => {
+  it('renders Play in manual mode with a polite accessible manual status', () => {
     const onPlay = vi.fn();
     render(
       <JourneyControls
@@ -38,7 +38,10 @@ describe('V3.1 guided journey controls', () => {
       />,
     );
 
-    expect(screen.getByRole('status')).toHaveTextContent('Manual navigation');
+    const status = screen.getByText('Manual navigation');
+    expect(status).toHaveAttribute('aria-live', 'polite');
+    expect(status).toHaveAttribute('aria-atomic', 'true');
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /play journey/i }));
     expect(onPlay).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', { name: /previous chapter/i })).toBeDisabled();
@@ -60,7 +63,7 @@ describe('V3.1 guided journey controls', () => {
       />,
     );
 
-    expect(screen.getByRole('status')).toHaveTextContent('Autoplay playing');
+    expect(screen.getByText('Autoplay playing')).toHaveAttribute('aria-live', 'polite');
     fireEvent.click(screen.getByRole('button', { name: /pause autoplay/i }));
     expect(onPause).toHaveBeenCalledTimes(1);
 
@@ -78,7 +81,7 @@ describe('V3.1 guided journey controls', () => {
       />,
     );
 
-    expect(screen.getByRole('status')).toHaveTextContent('Autoplay paused');
+    expect(screen.getByText('Autoplay paused')).toHaveAttribute('aria-live', 'polite');
     fireEvent.click(screen.getByRole('button', { name: /resume autoplay/i }));
     expect(onResume).toHaveBeenCalledTimes(1);
   });
@@ -98,7 +101,7 @@ describe('V3.1 guided journey controls', () => {
       />,
     );
 
-    expect(screen.getByRole('status')).toHaveTextContent('Autoplay completed');
+    expect(screen.getByText('Autoplay completed')).toHaveAttribute('aria-live', 'polite');
     fireEvent.click(screen.getByRole('button', { name: /play from beginning/i }));
     expect(onPlay).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', { name: /next chapter/i })).toBeDisabled();
