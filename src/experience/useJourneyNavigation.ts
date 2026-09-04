@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { chapters } from '../content/chapters';
 import {
+  advancePlaybackProgress,
   initialPlaybackState,
+  nextReducedMotionChapterIndex,
   reducePlayback,
   type PlaybackEvent,
   type PlaybackMode,
@@ -15,7 +17,11 @@ import {
 } from './navigation';
 import { useExperienceStore } from './store';
 
+export const AUTOPLAY_TOTAL_DURATION_MS = 120_000;
+export const REDUCED_MOTION_CHAPTER_HOLD_MS = 6_000;
+
 const chapterIds = chapters.map((chapter) => chapter.id);
+const navigationKeys = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
 
 type NavigationHistory = 'none' | 'push' | 'replace';
 
@@ -39,13 +45,21 @@ function documentScrollHeight() {
   return Math.max(document.documentElement.scrollHeight, document.body?.scrollHeight ?? 0);
 }
 
+function isEditableTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  return target instanceof HTMLInputElement
+    || target instanceof HTMLTextAreaElement
+    || target instanceof HTMLSelectElement;
+}
+
 export function useJourneyNavigation(): JourneyNavigationController {
-  const globalProgress = useExperienceStore((state) => state.globalProgress);
   const chapterId = useExperienceStore((state) => state.chapterId);
   const chapterIndex = useExperienceStore((state) => state.chapterIndex);
   const reducedMotion = useExperienceStore((state) => state.quality.reducedMotion);
   const [playback, setPlayback] = useState(initialPlaybackState);
   const pendingChapterRef = useRef<string | null>(null);
+  const playbackStartProgressRef = useRef<number | null>(null);
 
   const dispatch = useCallback((event: PlaybackEvent) => {
     setPlayback((state) => reducePlayback(state, event));
@@ -95,14 +109,16 @@ export function useJourneyNavigation(): JourneyNavigationController {
   }, [chapterIndex, goToChapter]);
 
   const play = useCallback(() => {
-    if (playback.mode === 'completed' || globalProgress >= 1) {
+    const liveProgress = useExperienceStore.getState().globalProgress;
+    if (playback.mode === 'completed' || liveProgress >= 1) {
+      playbackStartProgressRef.current = 0;
       pendingChapterRef.current = chapters[0].id;
       const hash = canonicalChapterHash(chapters[0].id);
       window.history.replaceState(null, '', hash);
       scrollToProgress(0, 'auto');
     }
     dispatch('play');
-  }, [dispatch, globalProgress, playback.mode, scrollToProgress]);
+  }, [dispatch, playback.mode, scrollToProgress]);
 
   const pause = useCallback(() => dispatch('pause'), [dispatch]);
   const resume = useCallback(() => dispatch('resume'), [dispatch]);
@@ -144,6 +160,102 @@ export function useJourneyNavigation(): JourneyNavigationController {
       window.history.replaceState(null, '', hash);
     }
   }, [chapterId]);
+
+  useEffect(() => {
+    if (playback.mode !== 'playing' || reducedMotion) return;
+
+    let cancelled = false;
+    let frameId = 0;
+    let previousTimestamp: number | null = null;
+    let progress = playbackStartProgressRef.current
+      ?? useExperienceStore.getState().globalProgress;
+    playbackStartProgressRef.current = null;
+
+    const frame = (timestamp: number) => {
+      if (cancelled) return;
+      const deltaMs = previousTimestamp === null ? 0 : Math.max(0, timestamp - previousTimestamp);
+      previousTimestamp = timestamp;
+      progress = advancePlaybackProgress(progress, deltaMs, AUTOPLAY_TOTAL_DURATION_MS);
+      scrollToProgress(progress, 'auto');
+
+      if (progress >= 1) {
+        dispatch('complete');
+        return;
+      }
+      frameId = window.requestAnimationFrame(frame);
+    };
+
+    frameId = window.requestAnimationFrame(frame);
+    return () => {
+      cancelled = true;
+      if (frameId) window.cancelAnimationFrame(frameId);
+    };
+  }, [dispatch, playback.mode, reducedMotion, scrollToProgress]);
+
+  useEffect(() => {
+    if (playback.mode !== 'playing' || !reducedMotion) return;
+
+    let cancelled = false;
+    let timerId = 0;
+    let currentIndex = useExperienceStore.getState().chapterIndex;
+
+    const scheduleStep = () => {
+      timerId = window.setTimeout(() => {
+        if (cancelled) return;
+        const targetIndex = nextReducedMotionChapterIndex(currentIndex, chapters.length);
+        if (targetIndex === currentIndex) {
+          dispatch('complete');
+          return;
+        }
+
+        currentIndex = targetIndex;
+        navigateToChapter(chapters[currentIndex].id, {
+          behavior: 'auto',
+          history: 'replace',
+          takeover: false,
+        });
+
+        if (currentIndex >= chapters.length - 1) {
+          dispatch('complete');
+          return;
+        }
+        scheduleStep();
+      }, REDUCED_MOTION_CHAPTER_HOLD_MS);
+    };
+
+    if (currentIndex >= chapters.length - 1) {
+      dispatch('complete');
+    } else {
+      scheduleStep();
+    }
+
+    return () => {
+      cancelled = true;
+      if (timerId) window.clearTimeout(timerId);
+    };
+  }, [dispatch, navigateToChapter, playback.mode, reducedMotion]);
+
+  useEffect(() => {
+    if (playback.mode !== 'playing' && playback.mode !== 'paused') return;
+
+    const takeover = () => dispatch('takeover');
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!navigationKeys.has(event.key) || isEditableTarget(event.target)) return;
+      takeover();
+    };
+
+    window.addEventListener('wheel', takeover, { passive: true });
+    window.addEventListener('touchstart', takeover, { passive: true });
+    window.addEventListener('touchmove', takeover, { passive: true });
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      window.removeEventListener('wheel', takeover);
+      window.removeEventListener('touchstart', takeover);
+      window.removeEventListener('touchmove', takeover);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [dispatch, playback.mode]);
 
   return {
     mode: playback.mode,
