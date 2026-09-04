@@ -1,5 +1,5 @@
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Suspense, useRef, type PointerEvent as ReactPointerEvent } from 'react';
+import { Suspense, useLayoutEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import * as THREE from 'three';
 import { chapters } from '../content/chapters';
 import { observeRuntimeFrame } from '../observability/frame';
@@ -14,7 +14,6 @@ import PostProcessingRig from './PostProcessingRig';
 import { createRuntimeQualityState } from './runtimeQuality';
 import { useExperienceStore } from './store';
 import { resolveVisualContinuity } from './visualContinuity';
-import WebGLRecoveryBoundary from './WebGLRecoveryBoundary';
 
 function FrameQualityProbe() {
   const setAdaptiveLevel = useExperienceStore((state) => state.setAdaptiveLevel);
@@ -62,6 +61,7 @@ export default function ExperienceCanvas({
   const pointer = useExperienceStore((state) => state.pointer);
   const setPointer = useExperienceStore((state) => state.setPointer);
   const setImpulse = useExperienceStore((state) => state.setImpulse);
+  const canvasHost = useRef<HTMLDivElement>(null);
   const chapter = chapters[Math.max(0, chapterIndex)] ?? chapters[0];
   const scene = chapter?.scene ?? 'dust';
   const continuity = resolveVisualContinuity({ chapterIndex, localProgress, reducedMotion: quality.reducedMotion });
@@ -82,6 +82,24 @@ export default function ExperienceCanvas({
   });
   const qualityScale = Math.max(0.35, Math.min(1, cinematicState.budget.particleBudget / 64000));
 
+  useLayoutEffect(() => {
+    const canvas = canvasHost.current?.querySelector('canvas');
+    if (!canvas) return;
+
+    const lost = (event: Event) => {
+      event.preventDefault();
+      onContextLost();
+    };
+    const restored = () => onContextRestored();
+
+    canvas.addEventListener('webglcontextlost', lost, false);
+    canvas.addEventListener('webglcontextrestored', restored, false);
+    return () => {
+      canvas.removeEventListener('webglcontextlost', lost, false);
+      canvas.removeEventListener('webglcontextrestored', restored, false);
+    };
+  }, [onContextLost, onContextRestored]);
+
   const updatePointer = (event: ReactPointerEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -98,7 +116,7 @@ export default function ExperienceCanvas({
   };
 
   return (
-    <div className="experience-canvas" aria-hidden="true" onPointerMove={updatePointer} onClick={click}>
+    <div ref={canvasHost} className="experience-canvas" aria-hidden="true" onPointerMove={updatePointer} onClick={click}>
       <Canvas
         dpr={cinematicState.budget.dpr}
         camera={{ position: [0, 0, 9], fov: 46, near: 0.1, far: 120 }}
@@ -106,7 +124,6 @@ export default function ExperienceCanvas({
       >
         <color attach="background" args={['#020308']} />
         <fog attach="fog" args={['#020308', 14, 58]} />
-        <WebGLRecoveryBoundary onContextLost={onContextLost} onContextRestored={onContextRestored} />
         <Suspense fallback={null}>
           <StarField
             count={cinematicState.budget.secondaryLayers ? (quality.tier === 'low' ? 500 : 1200) : 320}
