@@ -2,6 +2,30 @@
 
 All notable changes to Cosmic Dust Journey are documented here.
 
+## 3.1.0 — 2026-09-04
+
+### Guided journey and deep-links
+- Added one shared journey-navigation controller for canonical `#chapter-<id>` deep-links, progress-rail navigation, and Previous/Next chapter controls.
+- Initial canonical hashes and browser hash changes resolve only known chapter IDs; malformed/unknown hashes fail closed.
+- Explicit guided navigation pushes canonical history entries while passive chapter reflection uses `history.replaceState` to avoid history spam and duplicate browser scrolling.
+
+### Interruptible autoplay
+- Added opt-in cinematic autoplay with Play, Pause, Resume, and restart-after-completion behavior while continuing to drive the same real document scroll consumed by the existing V3.0 continuity/camera/scene pipeline.
+- `wheel`, touch intent, and supported scroll-navigation keys immediately relinquish autoplay to manual control; programmatic scroll events are not treated as takeover.
+- Pause cancels the active animation frame and Resume restarts from the live journey progress instead of stale playback state.
+
+### Reduced motion and accessibility
+- Reduced-motion autoplay uses bounded chapter-step playback with instant jumps and never starts continuous rAF scrolling.
+- Added compact semantic journey controls with visible keyboard focus and a polite live status that does not collide with the existing WebGL fallback `role="status"` contract.
+- Preserved the complete ten-chapter semantic narrative, WebGL fallback, V2.1 recovery/observability, muted-audio consent, and authored chapter IDs/order/copy.
+
+### QA
+- Added deterministic Vitest coverage for canonical navigation, autoplay state/progression, guided controls, deep-link hydration, pause/resume, takeover behavior, and reduced-motion stepping.
+- Added Playwright acceptance coverage for canonical deep-links, rail/Previous/Next navigation, live autoplay, Pause/Resume, wheel/keyboard takeover, reduced motion, and the unchanged ten-chapter ID set.
+- Existing V3.0 continuity boundaries and V2.1 WebGL/privacy/diagnostics suites remain part of the exact-head merge gate.
+
+> This changelog entry describes V3.1 source intended to merge through the normal branch/CI process. A Git tag or GitHub Release object must not be assumed unless it is created separately.
+
 ## 3.0.0 — 2026-09-04
 
 ### Visual continuity core
@@ -57,7 +81,7 @@ All notable changes to Cosmic Dust Journey are documented here.
 
 ### Cinematic fidelity
 - Replaced the V1 crossfade-only flow with a four-phase cinematic director: `enter -> settle -> interact -> transition`.
-- Added chapter-specific camera tracks, FOV intent, bounded pointer influence, and authored transition modes.
+- Added chapter-specific camera tracks, FOV intent, transition mode, bounded interaction, post-processing intent, and particle budget.
 - Added deterministic scene-semantic interaction for dust, collapse, fusion, main-sequence, red-giant, nebula, white-dwarf, and black-hole scenes.
 
 ### Visual upgrade
