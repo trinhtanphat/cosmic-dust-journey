@@ -13,121 +13,140 @@
 ## Global Constraints
 
 - V2 remains clean-room: do not copy, de-minify, recover, or transplant proprietary reference JavaScript, GLSL, audio, or unknown-rights artwork.
-- Preserve ten existing narrative chapters and eight existing `SceneId` values.
+- Preserve the ten existing chapter ids and eight existing `SceneId` values.
 - Scroll remains the only source of narrative progress; pointer/touch input may only add bounded visual interaction.
-- Every cinematic calculation used by rendering must be deterministic from chapter id, normalized local progress, quality state, and bounded pointer/impulse input.
-- `prefers-reduced-motion` must select a dedicated lower-motion path, not merely reduce animation duration.
+- Cinematic rendering state must be deterministic from chapter id, normalized local progress, quality state, and bounded pointer/impulse input. Elapsed time may animate local shader texture/noise only; it must not select narrative state.
+- `prefers-reduced-motion` must select a dedicated lower-motion path, not merely reduce duration.
 - No critical information may exist only in WebGL.
-- Sound remains muted until explicit user gesture and audio failure must not break the experience.
-- Do not add a new post-processing dependency; use modules shipped with the pinned Three.js package (`three/addons/postprocessing/*`) so the runtime dependency surface stays unchanged.
-- GitHub Pages builds must keep `VITE_BASE_PATH=/cosmic-dust-journey/`; Vercel and Cloudflare builds default to `/`.
-- The existing Pages artifact guard must remain intact and continue rejecting `/src/main.tsx` in `dist/index.html`.
-- Implementation work stays on `feature/v2-cinematic-fidelity` or short-lived child branches; no force/bypass merge.
+- Sound remains muted until explicit user gesture; audio failure must not break scroll or WebGL.
+- Do not add a post-processing package; use modules shipped with pinned Three.js (`three/addons/postprocessing/*`).
+- GitHub Pages builds keep `VITE_BASE_PATH=/cosmic-dust-journey/`; Vercel and Cloudflare builds keep root base `/`.
+- Keep the Pages artifact guard that requires `/cosmic-dust-journey/assets/` and rejects `/src/main.tsx`.
+- Work stays on `feature/v2-cinematic-fidelity` or short-lived child branches; no force/bypass merge.
 
----
+## Module Map
 
-## File/Module Map
+New modules:
+- `src/experience/cinematic.ts` — complete cinematic types + phase resolver.
+- `src/experience/cinematicProfiles.ts` — ten chapter profiles.
+- `src/experience/cameraTrack.ts` — deterministic camera interpolation.
+- `src/experience/transitions.ts` — deterministic transition state.
+- `src/experience/runtimeQuality.ts` — frame-time hysteresis.
+- `src/experience/postfx.ts` — postFX parameter resolver.
+- `src/experience/PostProcessingRig.tsx` — Three.js composer integration.
+- `src/experience/cinematicState.ts` — pure integration resolver consumed by Canvas/Director.
+- `src/audio/sceneAudio.ts` — per-scene procedural audio envelopes.
+- `src/shaders/noise.ts` — authored reusable GLSL helpers.
 
-New focused modules:
-
-- `src/experience/cinematic.ts` — cinematic phase/profile types and phase resolution.
-- `src/experience/cinematicProfiles.ts` — one authored profile for each of the ten chapter ids.
-- `src/experience/cameraTrack.ts` — deterministic camera/FOV interpolation with bounded pointer offsets.
-- `src/experience/transitions.ts` — pure transition-state resolver for all V2 transition modes.
-- `src/experience/runtimeQuality.ts` — frame-time hysteresis and adaptive rendering level.
-- `src/experience/postfx.ts` — pure mapping from scene/cinematic/quality state to postFX parameters.
-- `src/experience/PostProcessingRig.tsx` — R3F integration using Three.js EffectComposer/RenderPass/UnrealBloomPass.
-- `src/audio/sceneAudio.ts` — deterministic per-scene audio envelope parameters.
-- `src/shaders/noise.ts` — reusable authored GLSL noise helpers.
-- `tests/core/cinematic.test.ts`, `camera-track.test.ts`, `transitions.test.ts`, `runtime-quality.test.ts`, `postfx.test.ts`, `scene-audio.test.ts` — dependency-light deterministic tests.
-- `tests/e2e/v2-experience.spec.ts` — desktop/mobile/reduced-motion/alternate-route/browser-error coverage.
-
-Modified integration modules:
-
+Primary modified modules:
 - `src/experience/store.ts`, `ExperienceCanvas.tsx`, `interactions.ts`.
-- `src/scenes/sceneTypes.ts`, `sceneModel.ts`, `SceneDirector.tsx`, `ParticleCloud.tsx`, `StellarCore.tsx`, `AccretionDisk.tsx`, and all eight scene components.
+- `src/scenes/sceneTypes.ts`, `sceneModel.ts`, `SceneDirector.tsx`, `ParticleCloud.tsx`, `StellarCore.tsx`, `AccretionDisk.tsx`, all eight scene components.
 - `src/shaders/particleMaterial.ts`, `starMaterial.ts`, `diskMaterial.ts`.
 - `src/app/quality.ts`, `ExperienceShell.tsx`.
-- `src/components/ChapterSection.tsx`, `SoundToggle.tsx` only where V2 state must be exposed without moving orchestration into components.
-- `src/audio/ambient.ts`, `src/styles/global.css`.
-- `playwright.config.ts`, `.github/workflows/deploy-pages.yml`, `README.md`.
+- `src/components/ChapterSection.tsx`, `SoundToggle.tsx`.
+- `src/audio/ambient.ts`, `src/styles/global.css`, `playwright.config.ts`, `.github/workflows/deploy-pages.yml`, `README.md`.
 
 ---
 
-### Task 1: Cinematic chapter profiles and four-phase resolver
+### Task 1: Complete cinematic profile schema and four-phase resolver
 
 **Files:**
 - Create: `src/experience/cinematic.ts`
 - Create: `src/experience/cinematicProfiles.ts`
 - Create: `tests/core/cinematic.test.ts`
 
-**Interfaces:**
-- Produces:
-  - `type CinematicPhase = 'enter' | 'settle' | 'interact' | 'transition'`
-  - `type TransitionMode = 'crossfade' | 'morph-density' | 'radial-collapse' | 'radial-expansion' | 'shell-ejection' | 'flash-cut' | 'dissolve-to-point' | 'accretion-warp'`
-  - `interface PhaseStops { enterEnd: number; settleEnd: number; interactEnd: number }`
-  - `interface CinematicChapterProfile { chapterId: string; transition: TransitionMode; phaseStops: PhaseStops; camera: CameraTrackSpec; postFx: PostFxIntent; particleMultiplier: number; interactionMax: number }`
-  - `resolveCinematicPhase(profile, localProgress): { phase: CinematicPhase; phaseProgress: number }`
-  - `cinematicProfileFor(chapterId): CinematicChapterProfile`
+**Interfaces produced in this task:**
 
-- [ ] **Step 1: Write the failing phase/profile tests**
+```ts
+export type CinematicPhase = 'enter' | 'settle' | 'interact' | 'transition';
+export type TransitionMode =
+  | 'crossfade' | 'morph-density' | 'radial-collapse' | 'radial-expansion'
+  | 'shell-ejection' | 'flash-cut' | 'dissolve-to-point' | 'accretion-warp';
+export type Vec3 = readonly [number, number, number];
+export interface PhaseStops { enterEnd: number; settleEnd: number; interactEnd: number }
+export interface CameraKeyframe { at: number; position: Vec3; target: Vec3; fov: number }
+export interface CameraTrackSpec {
+  keyframes: readonly CameraKeyframe[];
+  pointerInfluence: readonly [number, number];
+  microParallax: number;
+  reducedMotionScale: number;
+}
+export interface PostFxIntent {
+  bloom: number;
+  exposure: number;
+  vignette: number;
+  chromaticFringe: number;
+}
+export interface CinematicChapterProfile {
+  chapterId: string;
+  transition: TransitionMode;
+  phaseStops: PhaseStops;
+  camera: CameraTrackSpec;
+  postFx: PostFxIntent;
+  particleMultiplier: number;
+  interactionMax: number;
+}
+export function resolveCinematicPhase(
+  profile: CinematicChapterProfile,
+  localProgress: number,
+): { phase: CinematicPhase; phaseProgress: number };
+export function cinematicProfileFor(chapterId: string): CinematicChapterProfile;
+```
+
+- [ ] **Step 1: Write failing tests**
 
 ```ts
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { cinematicProfileFor, resolveCinematicPhase } from '../../src/experience/cinematic.ts';
 
-test('all narrative chapters have explicit cinematic profiles', () => {
-  for (const id of ['overture','cold-cloud','collapse','ignition','main-sequence','red-giant','shedding','white-dwarf','elsewhere','epilogue']) {
-    assert.equal(cinematicProfileFor(id).chapterId, id);
+const ids = ['overture','cold-cloud','collapse','ignition','main-sequence','red-giant','shedding','white-dwarf','elsewhere','epilogue'];
+
+test('all ten chapters have valid profiles', () => {
+  for (const id of ids) {
+    const profile = cinematicProfileFor(id);
+    assert.equal(profile.chapterId, id);
+    assert.ok(profile.camera.keyframes.length >= 2);
+    assert.ok(profile.interactionMax >= 0 && profile.interactionMax <= 1);
   }
 });
 
-test('phase resolver exposes enter settle interact transition', () => {
+test('resolver exposes enter settle interact transition', () => {
   const profile = cinematicProfileFor('main-sequence');
   assert.equal(resolveCinematicPhase(profile, 0.05).phase, 'enter');
-  assert.equal(resolveCinematicPhase(profile, 0.3).phase, 'settle');
-  assert.equal(resolveCinematicPhase(profile, 0.6).phase, 'interact');
+  assert.equal(resolveCinematicPhase(profile, 0.30).phase, 'settle');
+  assert.equal(resolveCinematicPhase(profile, 0.60).phase, 'interact');
   assert.equal(resolveCinematicPhase(profile, 0.95).phase, 'transition');
 });
 ```
 
 - [ ] **Step 2: Run RED**
 
-Run: `node --experimental-strip-types --test tests/core/cinematic.test.ts`
-Expected: FAIL because `src/experience/cinematic.ts` does not exist.
+`node --experimental-strip-types --test tests/core/cinematic.test.ts`
 
-- [ ] **Step 3: Implement the pure types/resolver and ten explicit profiles**
+Expected: FAIL because cinematic modules do not exist.
 
-Use phase normalization equivalent to:
+- [ ] **Step 3: Implement schema, validation-by-construction, and resolver**
 
-```ts
-export function resolveCinematicPhase(profile: CinematicChapterProfile, input: number) {
-  const p = clamp01(input);
-  const { enterEnd, settleEnd, interactEnd } = profile.phaseStops;
-  if (p < enterEnd) return { phase: 'enter' as const, phaseProgress: p / enterEnd };
-  if (p < settleEnd) return { phase: 'settle' as const, phaseProgress: (p - enterEnd) / (settleEnd - enterEnd) };
-  if (p < interactEnd) return { phase: 'interact' as const, phaseProgress: (p - settleEnd) / (interactEnd - settleEnd) };
-  return { phase: 'transition' as const, phaseProgress: (p - interactEnd) / (1 - interactEnd) };
-}
-```
+Use clamped 0..1 progress. Require `0 < enterEnd < settleEnd < interactEnd < 1`; profile creation throws on invalid stops or unordered camera keyframes. Implement all ten profiles now so later tasks never invent missing data.
 
-Profiles must explicitly assign these V2 transition intents:
-- `overture`: `morph-density`
-- `cold-cloud`: `radial-collapse`
-- `collapse`: `flash-cut`
-- `ignition`: `crossfade`
-- `main-sequence`: `radial-expansion`
-- `red-giant`: `shell-ejection`
-- `shedding`: `dissolve-to-point`
-- `white-dwarf`: `crossfade`
-- `elsewhere`: `accretion-warp`
-- `epilogue`: `crossfade`
+Transition intents:
+- overture -> `morph-density`
+- cold-cloud -> `radial-collapse`
+- collapse -> `flash-cut`
+- ignition -> `crossfade`
+- main-sequence -> `radial-expansion`
+- red-giant -> `shell-ejection`
+- shedding -> `dissolve-to-point`
+- white-dwarf -> `crossfade`
+- elsewhere -> `accretion-warp`
+- epilogue -> `crossfade`
 
-- [ ] **Step 4: Run GREEN plus existing core suite**
+- [ ] **Step 4: Run GREEN**
 
-Run: `node --experimental-strip-types --test tests/core/cinematic.test.ts tests/core/timeline.test.ts tests/core/content.test.ts`
-Expected: all PASS.
+`node --experimental-strip-types --test tests/core/cinematic.test.ts tests/core/timeline.test.ts tests/core/content.test.ts`
+
+Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
@@ -138,69 +157,79 @@ git commit -m "feat: add V2 cinematic chapter profiles"
 
 ---
 
-### Task 2: Deterministic chapter-specific camera tracks
+### Task 2: Deterministic chapter-specific camera sampler
 
 **Files:**
 - Create: `src/experience/cameraTrack.ts`
-- Modify: `src/experience/cinematic.ts`
 - Modify: `src/experience/cinematicProfiles.ts`
 - Create: `tests/core/camera-track.test.ts`
 
-**Interfaces:**
-- Consumes: `CinematicChapterProfile.camera` from Task 1.
-- Produces:
-  - `type Vec3 = readonly [number, number, number]`
-  - `interface CameraKeyframe { at: number; position: Vec3; target: Vec3; fov: number }`
-  - `interface CameraTrackSpec { keyframes: readonly CameraKeyframe[]; pointerInfluence: readonly [number, number]; microParallax: number; reducedMotionScale: number }`
-  - `sampleCameraTrack(track, progress, pointer, reducedMotion): CameraPose`
+**Consumes:** `CameraTrackSpec`, `Vec3` from Task 1.
 
-- [ ] **Step 1: Write failing interpolation/bounds tests**
+**Produces:**
 
 ```ts
+export interface CameraPose { position: Vec3; target: Vec3; fov: number }
+export function sampleCameraTrack(
+  track: CameraTrackSpec,
+  progress: number,
+  pointer: { x: number; y: number },
+  reducedMotion: boolean,
+): CameraPose;
+```
+
+- [ ] **Step 1: Write failing tests with a concrete fixture**
+
+```ts
+const track: CameraTrackSpec = {
+  keyframes: [
+    { at: 0, position: [0,0,10], target: [0,0,0], fov: 46 },
+    { at: 1, position: [0.2,0.1,8], target: [0,0,0], fov: 42 },
+  ],
+  pointerInfluence: [0.3,0.2],
+  microParallax: 0.1,
+  reducedMotionScale: 0.15,
+};
 const pose = sampleCameraTrack(track, 0.5, { x: 9, y: -9 }, false);
 assert.ok(pose.position[0] <= 0.5 && pose.position[0] >= -0.5);
-assert.ok(pose.fov >= 38 && pose.fov <= 52);
+assert.ok(pose.fov >= 42 && pose.fov <= 46);
 const reduced = sampleCameraTrack(track, 0.5, { x: 1, y: 1 }, true);
-assert.ok(Math.abs(reduced.position[0]) < Math.abs(pose.position[0]));
+assert.ok(Math.abs(reduced.position[0] - 0.1) < Math.abs(pose.position[0] - 0.1));
 ```
 
 - [ ] **Step 2: Run RED**
 
-Run: `node --experimental-strip-types --test tests/core/camera-track.test.ts`
-Expected: FAIL because `sampleCameraTrack` is missing.
+`node --experimental-strip-types --test tests/core/camera-track.test.ts`
 
-- [ ] **Step 3: Implement segment interpolation**
+- [ ] **Step 3: Implement interpolation**
 
-Clamp progress to 0..1, select the surrounding ordered keyframes, smoothstep the local segment, linearly interpolate position/target/FOV, clamp pointer to `[-1,1]`, then apply only the configured pointer influence. Reduced-motion multiplies pointer/micro-parallax amplitude by `reducedMotionScale` and does not change scroll timing.
+Clamp progress and pointer; find surrounding ordered keyframes; smoothstep segment-local progress; lerp position/target/FOV. Apply bounded pointer influence after base interpolation. Reduced motion multiplies pointer and micro-parallax amplitude by `reducedMotionScale`; it does not alter scroll/phase timing.
 
-- [ ] **Step 4: Populate distinct tracks for all ten profiles**
+- [ ] **Step 4: Refine all ten profile tracks**
 
-Required directionality:
-- dust/overture: wide slow entry;
-- collapse: progressive dolly-in;
-- ignition: compressed framing plus brief FOV expansion;
-- main sequence: stable low-amplitude orbit/parallax;
-- red giant: pull-back as apparent radius expands;
-- shedding/nebula: wide reveal;
-- white dwarf: quiet centered framing;
-- elsewhere/black hole: low-angle disk reveal;
-- epilogue: slow drift away.
+Observable direction:
+- overture/cold cloud: wide slow entry;
+- collapse: dolly inward;
+- ignition: compressed framing then modest FOV release;
+- main sequence: stable low-amplitude framing;
+- red giant: pull back as radius grows;
+- shedding: wide reveal;
+- white dwarf: centered/quiet;
+- elsewhere: low-angle accretion-disk reveal;
+- epilogue: drift away.
 
-- [ ] **Step 5: Run GREEN**
+- [ ] **Step 5: Run GREEN and commit**
 
-Run: `node --experimental-strip-types --test tests/core/camera-track.test.ts tests/core/cinematic.test.ts`
-Expected: PASS.
-
-- [ ] **Step 6: Commit**
+`node --experimental-strip-types --test tests/core/camera-track.test.ts tests/core/cinematic.test.ts`
 
 ```bash
-git add src/experience/cameraTrack.ts src/experience/cinematic.ts src/experience/cinematicProfiles.ts tests/core/camera-track.test.ts
+git add src/experience/cameraTrack.ts src/experience/cinematicProfiles.ts tests/core/camera-track.test.ts
 git commit -m "feat: add chapter camera choreography"
 ```
 
 ---
 
-### Task 3: Transition-state resolver and SceneDirector integration
+### Task 3: Transition resolver and SceneDirector migration
 
 **Files:**
 - Create: `src/experience/transitions.ts`
@@ -208,13 +237,31 @@ git commit -m "feat: add chapter camera choreography"
 - Modify: `src/scenes/sceneTypes.ts`
 - Modify: `src/scenes/SceneDirector.tsx`
 
-**Interfaces:**
-- Produces:
-  - `interface TransitionState { mode: TransitionMode; amount: number; outgoingOpacity: number; incomingOpacity: number; radialScale: number; densityScale: number; flash: number; warp: number; shell: number }`
-  - `resolveTransition(mode, phase, phaseProgress, reducedMotion): TransitionState`
-- `SceneProps` gains `cinematic: TransitionState`.
+**Produces:**
 
-- [ ] **Step 1: Write failing transition tests**
+```ts
+export interface TransitionState {
+  mode: TransitionMode;
+  amount: number;
+  outgoingOpacity: number;
+  incomingOpacity: number;
+  radialScale: number;
+  densityScale: number;
+  flash: number;
+  warp: number;
+  shell: number;
+}
+export function resolveTransition(
+  mode: TransitionMode,
+  phase: CinematicPhase,
+  phaseProgress: number,
+  reducedMotion: boolean,
+): TransitionState;
+```
+
+`SceneProps` gains required `cinematic: TransitionState`.
+
+- [ ] **Step 1: Write RED tests**
 
 ```ts
 const flash = resolveTransition('flash-cut', 'transition', 0.5, false);
@@ -226,16 +273,13 @@ assert.equal(reduced.warp, 0);
 
 - [ ] **Step 2: Run RED**
 
-Run: `node --experimental-strip-types --test tests/core/transitions.test.ts`
-Expected: FAIL because module is missing.
+`node --experimental-strip-types --test tests/core/transitions.test.ts`
 
-- [ ] **Step 3: Implement pure transition mapping**
+- [ ] **Step 3: Implement all eight modes with every scalar clamped 0..1**
 
-All modes return bounded 0..1 values. For reduced motion, any mode other than `crossfade` resolves to crossfade semantics while retaining the same phase duration.
+Reduced motion resolves non-crossfade modes to crossfade semantics with identical phase timing.
 
-- [ ] **Step 4: Replace the hard-coded `0.76/0.24` crossfade in `SceneDirector`**
-
-Flow:
+- [ ] **Step 4: Replace SceneDirector's hard-coded `0.76/0.24` transition**
 
 ```ts
 const profile = cinematicProfileFor(chapter.id);
@@ -243,14 +287,11 @@ const phase = resolveCinematicPhase(profile, progress);
 const transition = resolveTransition(profile.transition, phase.phase, phase.phaseProgress, quality.reducedMotion);
 ```
 
-Render current/next scenes using `outgoingOpacity`/`incomingOpacity`, pass the same resolved `cinematic` object into both scene components, and preserve the current fallback when the current and next chapter share the same scene id.
+Use transition opacities for current/next scenes and pass `cinematic={transition}`. If next chapter has the same scene id, do not instantiate a duplicate scene; keep a single scene with transition amount available for local effects.
 
-- [ ] **Step 5: Run GREEN and typecheck**
+- [ ] **Step 5: Run GREEN/typecheck and commit**
 
-Run: `node --experimental-strip-types --test tests/core/transitions.test.ts tests/core/cinematic.test.ts && npm run typecheck`
-Expected: PASS.
-
-- [ ] **Step 6: Commit**
+`node --experimental-strip-types --test tests/core/transitions.test.ts tests/core/cinematic.test.ts && npm run typecheck`
 
 ```bash
 git add src/experience/transitions.ts tests/core/transitions.test.ts src/scenes/sceneTypes.ts src/scenes/SceneDirector.tsx
@@ -259,7 +300,7 @@ git commit -m "feat: add cinematic scene transitions"
 
 ---
 
-### Task 4: Expand bounded scene-semantic interactions
+### Task 4: Expand bounded interaction semantics to all scene families
 
 **Files:**
 - Modify: `src/experience/interactions.ts`
@@ -267,37 +308,44 @@ git commit -m "feat: add cinematic scene transitions"
 - Modify: `src/scenes/ParticleCloud.tsx`
 - Modify: `src/shaders/particleMaterial.ts`
 
-**Interfaces:**
-- `InteractionKind` becomes:
-  - `shockwave | gravity | ignition | radiation | convection | gas-ripple | dwarf-glow | disk-disturbance | none`
-- `interactionImpulse(scene, event, localProgress, maxStrength = 1): InteractionImpulse`
-- Strength must always satisfy `0 <= strength <= maxStrength <= 1`.
+**Interface:**
 
-- [ ] **Step 1: Extend tests to every scene family and strength bounds**
+```ts
+export type InteractionKind =
+  | 'shockwave' | 'gravity' | 'ignition' | 'radiation'
+  | 'convection' | 'gas-ripple' | 'dwarf-glow' | 'disk-disturbance' | 'none';
+export function interactionImpulse(
+  scene: SceneId,
+  event: 'move' | 'click',
+  localProgress: number,
+  maxStrength?: number,
+): InteractionImpulse;
+```
+
+- [ ] **Step 1: Extend tests before implementation**
 
 ```ts
 assert.equal(interactionImpulse('fusion','move',0.5).kind, 'ignition');
 assert.equal(interactionImpulse('red-giant','move',0.5).kind, 'convection');
 assert.equal(interactionImpulse('nebula','move',0.5).kind, 'gas-ripple');
 assert.equal(interactionImpulse('white-dwarf','move',0.5).kind, 'dwarf-glow');
-for (const scene of sceneIds) assert.ok(interactionImpulse(scene,'move',9).strength <= 1);
+for (const scene of sceneIds) {
+  const result = interactionImpulse(scene, 'move', 4, 0.7);
+  assert.ok(result.strength >= 0 && result.strength <= 0.7);
+}
 ```
 
 - [ ] **Step 2: Run RED**
 
-Run: `node --experimental-strip-types --test tests/core/interactions.test.ts`
-Expected: FAIL for new kinds.
+`node --experimental-strip-types --test tests/core/interactions.test.ts`
 
-- [ ] **Step 3: Implement bounded mapping and shader modes**
+- [ ] **Step 3: Implement mapping + authored shader modes**
 
-Keep shockwave click-only. Map new particle shader modes to separate authored formulas; never use pointer input to alter chapter, route, or global progress.
+Shockwave remains click-only. Pointer interaction never writes global/chapter progress. Update `modeFor()` and particle shader branches for all kinds, using finite-distance clamps to avoid singularities.
 
-- [ ] **Step 4: Run GREEN**
+- [ ] **Step 4: Run GREEN/typecheck and commit**
 
-Run: `node --experimental-strip-types --test tests/core/interactions.test.ts && npm run typecheck`
-Expected: PASS.
-
-- [ ] **Step 5: Commit**
+`node --experimental-strip-types --test tests/core/interactions.test.ts && npm run typecheck`
 
 ```bash
 git add src/experience/interactions.ts tests/core/interactions.test.ts src/scenes/ParticleCloud.tsx src/shaders/particleMaterial.ts
@@ -306,7 +354,7 @@ git commit -m "feat: expand scene semantic interactions"
 
 ---
 
-### Task 5: Runtime adaptive quality with hysteresis
+### Task 5: Runtime quality adaptation with explicit hysteresis
 
 **Files:**
 - Create: `src/experience/runtimeQuality.ts`
@@ -316,23 +364,33 @@ git commit -m "feat: expand scene semantic interactions"
 - Modify: `src/experience/store.ts`
 - Modify: `src/experience/ExperienceCanvas.tsx`
 
-**Interfaces:**
-- Produces:
-  - `type AdaptiveLevel = 0 | 1 | 2 | 3`
-  - `interface RuntimeQualityState { level: AdaptiveLevel; slowFrames: number; fastFrames: number }`
-  - `observeFrame(state, frameMs): RuntimeQualityState`
-  - `interface RenderBudget { dpr: number; particleBudget: number; postprocessing: boolean; secondaryLayers: boolean; shaderComplexity: 'full' | 'reduced' }`
-  - `renderBudgetFor(profile, level): RenderBudget`
-- Store gains `adaptiveLevel` and `setAdaptiveLevel(level)`.
+**Produces:**
 
-- [ ] **Step 1: Write hysteresis tests**
+```ts
+export type AdaptiveLevel = 0 | 1 | 2 | 3;
+export interface RuntimeQualityState { level: AdaptiveLevel; slowFrames: number; fastFrames: number }
+export interface RenderBudget {
+  dpr: number;
+  particleBudget: number;
+  postprocessing: boolean;
+  secondaryLayers: boolean;
+  shaderComplexity: 'full' | 'reduced';
+}
+export function createRuntimeQualityState(): RuntimeQualityState;
+export function observeFrame(state: RuntimeQualityState, frameMs: number): RuntimeQualityState;
+export function renderBudgetFor(profile: QualityProfile, level: AdaptiveLevel): RenderBudget;
+```
 
-Use explicit thresholds:
-- slow sample: `frameMs >= 24`
-- fast sample: `frameMs <= 17`
-- downgrade after 45 slow samples;
-- recovery only after 240 fast samples;
-- level clamps 0..3.
+Store gains `adaptiveLevel` and `setAdaptiveLevel(level)`.
+
+- [ ] **Step 1: Write hysteresis RED test**
+
+Threshold contract:
+- slow sample `>=24ms`;
+- fast sample `<=17ms`;
+- downgrade after 45 consecutive/accumulated slow samples without a fast reset;
+- recover one level only after 240 fast samples;
+- clamp level 0..3.
 
 ```ts
 let state = createRuntimeQualityState();
@@ -346,23 +404,19 @@ assert.equal(state.level, 0);
 
 - [ ] **Step 2: Run RED**
 
-Run: `node --experimental-strip-types --test tests/core/runtime-quality.test.ts`
-Expected: FAIL.
+`node --experimental-strip-types --test tests/core/runtime-quality.test.ts`
 
-- [ ] **Step 3: Implement pure quality state and budget scaling**
+- [ ] **Step 3: Implement cost reduction order**
 
-Cost reduction order must be encoded explicitly: postFX -> particles -> DPR -> secondary layers -> shader complexity. Narrative timing fields are not inputs to this module.
+Level 0 = static profile. Degrade in order: disable/reduce postFX -> particle budget -> DPR -> secondary layers; level 3 also selects reduced shader complexity. Do not modify chapter timing.
 
-- [ ] **Step 4: Add a `FrameQualityProbe` R3F component**
+- [ ] **Step 4: Add `FrameQualityProbe` inside Canvas**
 
-Use `useFrame((_, delta) => ...)`, sample `delta * 1000`, call pure `observeFrame`, and only write to Zustand when `level` changes. Do not write state on every frame.
+Use `delta * 1000`, keep the rolling state in a ref, and write Zustand only when adaptive level changes—not every frame.
 
-- [ ] **Step 5: Run GREEN plus build**
+- [ ] **Step 5: Run GREEN/build and commit**
 
-Run: `node --experimental-strip-types --test tests/core/runtime-quality.test.ts tests/core/quality.test.ts && npm run build`
-Expected: PASS.
-
-- [ ] **Step 6: Commit**
+`node --experimental-strip-types --test tests/core/runtime-quality.test.ts tests/core/quality.test.ts && npm run build`
 
 ```bash
 git add src/experience/runtimeQuality.ts tests/core/runtime-quality.test.ts src/app/quality.ts tests/core/quality.test.ts src/experience/store.ts src/experience/ExperienceCanvas.tsx
@@ -371,7 +425,7 @@ git commit -m "feat: add adaptive runtime render quality"
 
 ---
 
-### Task 6: Pure postFX intent and Three.js composer integration
+### Task 6: PostFX resolver and Three.js composer integration
 
 **Files:**
 - Create: `src/experience/postfx.ts`
@@ -379,31 +433,60 @@ git commit -m "feat: add adaptive runtime render quality"
 - Create: `src/experience/PostProcessingRig.tsx`
 - Modify: `src/experience/ExperienceCanvas.tsx`
 
-**Interfaces:**
-- Produces `interface PostFxState { enabled: boolean; bloomStrength: number; bloomRadius: number; bloomThreshold: number; exposure: number; vignetteOpacity: number; chromaticFringe: number }`
-- `resolvePostFx(scene, phase, transition, budget): PostFxState`
-
-- [ ] **Step 1: Write failing pure mapping tests**
+**Produces:**
 
 ```ts
-assert.equal(resolvePostFx('dust','settle',neutral,budgetLow).enabled, false);
-const ignition = resolvePostFx('fusion','transition',flashState,budgetHigh);
+export interface PostFxState {
+  enabled: boolean;
+  bloomStrength: number;
+  bloomRadius: number;
+  bloomThreshold: number;
+  exposure: number;
+  vignetteOpacity: number;
+  chromaticFringe: number;
+}
+export function resolvePostFx(
+  scene: SceneId,
+  phase: CinematicPhase,
+  transition: TransitionState,
+  intent: PostFxIntent,
+  budget: RenderBudget,
+  reducedMotion: boolean,
+): PostFxState;
+```
+
+- [ ] **Step 1: Write RED tests with fully defined fixtures**
+
+```ts
+const neutral: TransitionState = {
+  mode:'crossfade', amount:0, outgoingOpacity:1, incomingOpacity:0,
+  radialScale:1, densityScale:1, flash:0, warp:0, shell:0,
+};
+const budgetLow: RenderBudget = {
+  dpr:1, particleBudget:9000, postprocessing:false,
+  secondaryLayers:false, shaderComplexity:'reduced',
+};
+const budgetHigh: RenderBudget = {
+  dpr:1.5, particleBudget:50000, postprocessing:true,
+  secondaryLayers:true, shaderComplexity:'full',
+};
+const intent: PostFxIntent = { bloom:0.8, exposure:1.05, vignette:0.5, chromaticFringe:0.08 };
+assert.equal(resolvePostFx('dust','settle',neutral,intent,budgetLow,false).enabled, false);
+const flashState = { ...neutral, mode:'flash-cut' as const, amount:0.5, flash:1 };
+const ignition = resolvePostFx('fusion','transition',flashState,intent,budgetHigh,false);
 assert.ok(ignition.bloomStrength > 0.7);
 assert.ok(ignition.chromaticFringe <= 0.12);
 ```
 
 - [ ] **Step 2: Run RED**
 
-Run: `node --experimental-strip-types --test tests/core/postfx.test.ts`
-Expected: FAIL.
+`node --experimental-strip-types --test tests/core/postfx.test.ts`
 
-- [ ] **Step 3: Implement bounded postFX parameters**
+- [ ] **Step 3: Implement pure bounded resolver**
 
-High/medium may enable composer effects; low and reduced-motion return `enabled:false`. Chromatic fringe remains `<=0.12` and is nonzero only during ignition/accretion high-energy transitions.
+Low/reduced-motion returns `enabled:false`. Chromatic fringe is `<=0.12` and nonzero only for high-energy ignition/accretion transitions.
 
-- [ ] **Step 4: Implement `PostProcessingRig` with Three.js addons**
-
-Use:
+- [ ] **Step 4: Implement `PostProcessingRig` without a new dependency**
 
 ```ts
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -411,14 +494,11 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 ```
 
-Construct/dispose composer on renderer/scene/camera changes, resize with viewport, update bloom/exposure from resolved state, and render with `useFrame(..., 1)` only when enabled. Keep CSS `.vignette` as the accessibility-safe framing fallback.
+Create/dispose composer with renderer/scene/camera lifecycle, resize with viewport, render using R3F render priority only when enabled, and leave CSS `.vignette` as non-WebGL framing fallback. Implement chromatic fringe as a small authored ShaderPass only if `chromaticFringe > 0`; otherwise do not pay the pass cost.
 
-- [ ] **Step 5: Run GREEN/build**
+- [ ] **Step 5: Run GREEN/build and commit**
 
-Run: `node --experimental-strip-types --test tests/core/postfx.test.ts && npm run build`
-Expected: PASS.
-
-- [ ] **Step 6: Commit**
+`node --experimental-strip-types --test tests/core/postfx.test.ts && npm run build`
 
 ```bash
 git add src/experience/postfx.ts tests/core/postfx.test.ts src/experience/PostProcessingRig.tsx src/experience/ExperienceCanvas.tsx
@@ -427,7 +507,7 @@ git commit -m "feat: add adaptive cinematic post processing"
 
 ---
 
-### Task 7: Stellar surface, dust, collapse, ignition, and main-sequence visual upgrade
+### Task 7: Upgrade dust, collapse, fusion, and main-sequence rendering
 
 **Files:**
 - Create: `src/shaders/noise.ts`
@@ -442,42 +522,40 @@ git commit -m "feat: add adaptive cinematic post processing"
 - Modify: `src/scenes/FusionScene.tsx`
 - Modify: `src/scenes/MainSequenceScene.tsx`
 
-**Interfaces:**
-- Extend `SceneVisualModel` with `surfaceTurbulence`, `shellInstability`, `ejection`, `lensing`, `glowResponse`, each bounded 0..1.
-- `StellarCore` gains optional `turbulence`, `flash`, `qualityScale` props.
-- `ParticleCloud` gains optional `densityMorph`, `radialMotion`, `layerDepth` props.
+**SceneVisualModel additions:**
 
-- [ ] **Step 1: Extend scene-model tests before render work**
+```ts
+surfaceTurbulence: number; // 0..1
+shellInstability: number;  // 0..1
+ejection: number;          // 0..1
+lensing: number;           // 0..1
+glowResponse: number;      // 0..1
+```
 
-Assert:
-- late collapse spread < early collapse spread;
-- ignition flash peaks around middle progress rather than staying permanently high;
-- main sequence turbulence remains bounded/stable;
-- every newly added scalar is finite and within 0..1.
+`StellarCore` gains optional `turbulence`, `flash`, `qualityScale`. `ParticleCloud` gains optional `densityMorph`, `radialMotion`, `layerDepth`.
+
+- [ ] **Step 1: Add model RED assertions**
+
+Test late collapse spread < early collapse; ignition `glowResponse` peaks around ignition instead of staying maxed; main-sequence turbulence is finite/stable; every new scalar is 0..1 for every scene at progress `[-1,0,.5,1,2]` after clamping.
 
 - [ ] **Step 2: Run RED**
 
-Run: `node --experimental-strip-types --test tests/core/scene-model.test.ts`
-Expected: FAIL for missing model fields.
+`node --experimental-strip-types --test tests/core/scene-model.test.ts`
 
-- [ ] **Step 3: Implement model fields and authored shader helpers**
+- [ ] **Step 3: Implement model fields + authored GLSL noise helpers**
 
-`noise.ts` exports GLSL strings/functions authored in-repo; do not paste reference shader code. Upgrade star shader granulation with low-frequency plus cellular-like noise, controlled by quality scale.
+Do not paste reference shaders. Use `noise.ts` to share newly-authored hash/value/fbm helpers across star/particle shaders.
 
-- [ ] **Step 4: Upgrade the four scenes**
+- [ ] **Step 4: Implement required visual outcomes**
 
-Required observable outcomes:
-- Dust: 3 depth layers, subtle parallax, click shockwave.
-- Collapse: spiral/radial contraction and center brightening.
-- Fusion: finite ignition flash/corona burst.
-- Main sequence: stable granular star, corona, orbit depth, radiation-pressure particle response.
+- Dust: three depth layers, parallax/density variation, click shockwave.
+- Collapse: spiral + radial contraction, center brightening, increasing inward momentum.
+- Fusion: finite flash, corona expansion, outward burst.
+- Main sequence: granular star surface, procedural corona, orbit depth, radiation-pressure response, longest settle feeling.
 
-- [ ] **Step 5: Run core/type/build gates**
+- [ ] **Step 5: Verify and commit**
 
-Run: `node --experimental-strip-types --test tests/core/scene-model.test.ts tests/core/interactions.test.ts && npm run typecheck && npm run build`
-Expected: PASS.
-
-- [ ] **Step 6: Commit**
+`node --experimental-strip-types --test tests/core/scene-model.test.ts tests/core/interactions.test.ts && npm run typecheck && npm run build`
 
 ```bash
 git add src/shaders/noise.ts src/shaders/starMaterial.ts src/shaders/particleMaterial.ts src/scenes/StellarCore.tsx src/scenes/ParticleCloud.tsx src/scenes/sceneModel.ts tests/core/scene-model.test.ts src/scenes/DustCloudScene.tsx src/scenes/CollapseScene.tsx src/scenes/FusionScene.tsx src/scenes/MainSequenceScene.tsx
@@ -486,7 +564,7 @@ git commit -m "feat: upgrade early stellar phases"
 
 ---
 
-### Task 8: Red giant, nebula, white dwarf, and black-hole visual upgrade
+### Task 8: Upgrade red giant, nebula, white dwarf, and black-hole rendering
 
 **Files:**
 - Modify: `src/scenes/RedGiantScene.tsx`
@@ -498,37 +576,30 @@ git commit -m "feat: upgrade early stellar phases"
 - Modify: `src/scenes/sceneModel.ts`
 - Modify: `tests/core/scene-model.test.ts`
 
-**Interfaces:**
-- Uses Task 7 model fields plus Task 3 `TransitionState`.
-- `AccretionDisk` gains `warp`, `qualityScale`, and `pointer` inputs; distortion remains an authored approximation, not ray tracing.
+**AccretionDisk interface becomes:**
 
-- [ ] **Step 1: Add RED model assertions**
+```ts
+{ opacity: number; disturbance: number; warp: number; qualityScale: number; pointer: {x:number;y:number} }
+```
 
-Assert:
-- red giant `shellInstability` rises late;
-- nebula `ejection` rises while stellar radius falls;
-- white dwarf radius contracts and glow remains finite;
-- black hole `lensing` is nonzero and bounded.
+- [ ] **Step 1: Add RED assertions**
+
+Late red giant `shellInstability` rises; nebula `ejection` rises while stellar radius drops; white-dwarf radius contracts and glow stays finite; black-hole `lensing` is nonzero/bounded.
 
 - [ ] **Step 2: Run RED**
 
-Run: `node --experimental-strip-types --test tests/core/scene-model.test.ts`
-Expected: FAIL until values are implemented.
+`node --experimental-strip-types --test tests/core/scene-model.test.ts`
 
-- [ ] **Step 3: Implement scene/model changes**
+- [ ] **Step 3: Implement outcomes**
 
-Required outcomes:
-- red giant: visible radius growth plus turbulent envelope and late instability;
-- nebula: at least three independently scaled shell/gas layers with outward advection and retained remnant;
-- white dwarf: compact hot core with progressively quieter residual nebula;
-- black hole: layered accretion disk, lensing-like halo/distortion, pointer-driven turbulence only.
+- Red giant: visible radius growth, turbulent convection, late shell instability.
+- Nebula: at least three independently scaled gas/shell layers, outward advection, visible residual core, wider spatial reveal.
+- White dwarf: compact hot core, low motion, residual nebula fading.
+- Black hole: layered accretion disk, shader-based lensing-like halo/distortion approximation, pointer modifies disk turbulence only; no physically exact ray tracing.
 
-- [ ] **Step 4: Run GREEN/type/build**
+- [ ] **Step 4: Verify and commit**
 
-Run: `node --experimental-strip-types --test tests/core/scene-model.test.ts tests/core/interactions.test.ts && npm run typecheck && npm run build`
-Expected: PASS.
-
-- [ ] **Step 5: Commit**
+`node --experimental-strip-types --test tests/core/scene-model.test.ts tests/core/interactions.test.ts && npm run typecheck && npm run build`
 
 ```bash
 git add src/scenes/RedGiantScene.tsx src/scenes/NebulaScene.tsx src/scenes/WhiteDwarfScene.tsx src/scenes/BlackHoleScene.tsx src/scenes/AccretionDisk.tsx src/shaders/diskMaterial.ts src/scenes/sceneModel.ts tests/core/scene-model.test.ts
@@ -537,163 +608,188 @@ git commit -m "feat: upgrade late stellar phases"
 
 ---
 
-### Task 9: Wire chapter camera rig, resolved cinematic state, and runtime budgets into Canvas
+### Task 9: Pure cinematic integration state + Canvas/Director wiring
 
 **Files:**
+- Create: `src/experience/cinematicState.ts`
+- Create: `tests/core/cinematic-state.test.ts`
 - Modify: `src/experience/ExperienceCanvas.tsx`
 - Modify: `src/experience/store.ts`
 - Modify: `src/scenes/SceneDirector.tsx`
 - Modify: `src/scenes/StarField.tsx`
 
-**Interfaces:**
-- Consumes Tasks 1–6.
-- Store exposes the current quality profile + adaptive level; derived budget may remain local and should not be duplicated into multiple stores.
+**Produces:**
 
-- [ ] **Step 1: Add a small DOM/Vitest integration assertion**
+```ts
+export interface CinematicState {
+  profile: CinematicChapterProfile;
+  phase: CinematicPhase;
+  phaseProgress: number;
+  camera: CameraPose;
+  transition: TransitionState;
+  budget: RenderBudget;
+  postFx: PostFxState;
+}
+export function resolveCinematicState(input: {
+  chapterId: string;
+  scene: SceneId;
+  localProgress: number;
+  pointer: {x:number;y:number};
+  quality: QualityProfile;
+  adaptiveLevel: AdaptiveLevel;
+}): CinematicState;
+```
 
-Create `tests/experience-v2.test.tsx` asserting `ExperienceCanvas` wiring does not mutate chapter state from pointer events and that reduced-motion quality can render the shell without throwing.
+- [ ] **Step 1: Write RED integration tests**
+
+```ts
+const a = resolveCinematicState({ chapterId:'collapse', scene:'collapse', localProgress:.6, pointer:{x:0,y:0}, quality:high, adaptiveLevel:0 });
+const b = resolveCinematicState({ chapterId:'collapse', scene:'collapse', localProgress:.6, pointer:{x:0,y:0}, quality:high, adaptiveLevel:0 });
+assert.deepEqual(a, b);
+const reduced = resolveCinematicState({ chapterId:'elsewhere', scene:'black-hole', localProgress:.95, pointer:{x:1,y:1}, quality:{...high,reducedMotion:true}, adaptiveLevel:0 });
+assert.equal(reduced.transition.warp, 0);
+```
+
+Define `high` inside the test as:
+
+```ts
+const high = { tier:'high', dpr:1.5, particleBudget:64000, reducedMotion:false, postprocessing:true } as const;
+```
 
 - [ ] **Step 2: Run RED**
 
-Run: `npm run test:run -- tests/experience-v2.test.tsx`
-Expected: FAIL until new cinematic hooks are wired.
+`node --experimental-strip-types --test tests/core/cinematic-state.test.ts`
 
-- [ ] **Step 3: Replace old global `CameraRig` behavior**
+- [ ] **Step 3: Implement pure composition resolver**
 
-Resolve the active chapter profile and call `sampleCameraTrack(profile.camera, localProgress, pointer, reducedMotion)` every frame. Smooth only the actual Three.js camera toward the deterministic sampled pose; do not derive pose from elapsed time. Set camera FOV and call `updateProjectionMatrix()` only when FOV materially changes.
+It calls Tasks 1/2/3/5/6 pure functions only. No React, Three.js renderer, Date, random, or elapsed-time dependency.
 
-- [ ] **Step 4: Apply runtime render budget**
+- [ ] **Step 4: Replace old global CameraRig with resolved chapter camera pose**
 
-Use budget DPR, particle count multiplier, StarField count, optional secondary layers, postFX enablement, and shader quality scale. Keep narrative progress unchanged when adaptive level changes.
+Lerp actual camera toward deterministic pose for visual smoothness; set `camera.fov` from pose and update projection only on material change. Canvas derives `RenderBudget`, StarField count, postFX and SceneDirector state from the same `CinematicState` to avoid divergence.
 
-- [ ] **Step 5: Run GREEN/full unit gate**
+- [ ] **Step 5: Verify and commit**
 
-Run: `npm run test:run && npm run typecheck && npm run build`
-Expected: PASS.
-
-- [ ] **Step 6: Commit**
+`node --experimental-strip-types --test tests/core/cinematic-state.test.ts tests/core/cinematic.test.ts tests/core/camera-track.test.ts tests/core/transitions.test.ts tests/core/runtime-quality.test.ts tests/core/postfx.test.ts && npm run build`
 
 ```bash
-git add src/experience/ExperienceCanvas.tsx src/experience/store.ts src/scenes/SceneDirector.tsx src/scenes/StarField.tsx tests/experience-v2.test.tsx
+git add src/experience/cinematicState.ts tests/core/cinematic-state.test.ts src/experience/ExperienceCanvas.tsx src/experience/store.ts src/scenes/SceneDirector.tsx src/scenes/StarField.tsx
 git commit -m "feat: integrate V2 cinematic renderer"
 ```
 
 ---
 
-### Task 10: Scene-aware optional WebAudio envelopes
+### Task 10: Scene-aware procedural WebAudio envelopes
 
 **Files:**
 - Create: `src/audio/sceneAudio.ts`
 - Create: `tests/core/scene-audio.test.ts`
 - Modify: `src/audio/ambient.ts`
 - Modify: `src/components/SoundToggle.tsx`
-- Modify: `src/app/ExperienceShell.tsx`
 
-**Interfaces:**
-- Produces `interface SceneAudioEnvelope { lowHz: number; highHz: number; filterHz: number; gain: number; noise: number }`
-- `sceneAudioEnvelope(scene, localProgress): SceneAudioEnvelope`
-- `AmbientDriver` gains optional `setEnvelope(envelope): void`; existing injected test drivers remain valid by making it optional.
-
-- [ ] **Step 1: Write failing deterministic envelope tests**
+**Produces:**
 
 ```ts
-const main = sceneAudioEnvelope('main-sequence', 0.5);
-const black = sceneAudioEnvelope('black-hole', 0.5);
-assert.ok(black.lowHz < main.lowHz);
-assert.ok(main.gain <= 0.06);
+export interface SceneAudioEnvelope { lowHz: number; highHz: number; filterHz: number; gain: number; noise: number }
+export function sceneAudioEnvelope(scene: SceneId, localProgress: number): SceneAudioEnvelope;
 ```
+
+`AmbientDriver` gains optional `setEnvelope?(envelope: SceneAudioEnvelope): void`; `AmbientController` gains `setEnvelope(envelope): void`. Existing injected test drivers remain valid.
+
+- [ ] **Step 1: Write RED tests**
+
+```ts
+const main = sceneAudioEnvelope('main-sequence', .5);
+const black = sceneAudioEnvelope('black-hole', .5);
+assert.ok(black.lowHz < main.lowHz);
+assert.ok(main.gain >= 0 && main.gain <= .06);
+```
+
+Extend `audio.test.ts` to prove constructor still does not autoplay and `setEnvelope()` before enable does not start audio.
 
 - [ ] **Step 2: Run RED**
 
-Run: `node --experimental-strip-types --test tests/core/scene-audio.test.ts`
-Expected: FAIL.
+`node --experimental-strip-types --test tests/core/audio.test.ts tests/core/scene-audio.test.ts`
 
-- [ ] **Step 3: Implement envelopes and WebAudio parameter ramps**
+- [ ] **Step 3: Implement bounded envelopes and WebAudio parameter ramps**
 
-Use oscillator/filter/gain parameter changes only after audio has already been user-enabled. No autoplay, fetch, or bundled copied audio.
+Use oscillator/filter/gain changes only after user-enabled audio. No network audio fetch and no copied audio asset.
 
-- [ ] **Step 4: Wire active scene/local progress to the running controller**
+- [ ] **Step 4: Wire SoundToggle to active scene/progress while enabled**
 
-The controller remains created once; expose a safe `setEnvelope` forwarding method and call it only when sound is enabled. Audio initialization failure continues to force `soundEnabled=false` without affecting scroll/WebGL.
+Read `chapterIndex`/`localProgress` from store, derive current `SceneId` from `chapters`, and call `controller.setEnvelope(...)` from an effect. Do not recreate the controller on chapter changes.
 
-- [ ] **Step 5: Run GREEN**
+- [ ] **Step 5: Verify and commit**
 
-Run: `node --experimental-strip-types --test tests/core/audio.test.ts tests/core/scene-audio.test.ts && npm run test:run`
-Expected: PASS.
-
-- [ ] **Step 6: Commit**
+`node --experimental-strip-types --test tests/core/audio.test.ts tests/core/scene-audio.test.ts && npm run test:run`
 
 ```bash
-git add src/audio/sceneAudio.ts tests/core/scene-audio.test.ts src/audio/ambient.ts src/components/SoundToggle.tsx src/app/ExperienceShell.tsx
+git add src/audio/sceneAudio.ts tests/core/scene-audio.test.ts src/audio/ambient.ts src/components/SoundToggle.tsx
 git commit -m "feat: add scene aware procedural audio"
 ```
 
 ---
 
-### Task 11: Fidelity-oriented typography, staging, mobile, and reduced-motion polish
+### Task 11: Fidelity-oriented DOM staging, typography, mobile, and reduced-motion polish
 
 **Files:**
 - Modify: `src/styles/global.css`
 - Modify: `src/components/ChapterSection.tsx`
 - Modify: `src/app/ExperienceShell.tsx`
-- Modify: `tests/experience-v2.test.tsx`
+- Create: `tests/chapter-section-v2.test.tsx`
 
-**Interfaces:**
-- DOM remains semantic and contains the full narrative.
-- Add non-semantic data attributes only for deterministic QA, e.g. `data-cinematic-phase` on the shell when useful.
+**DOM contract:**
+- retain all ten semantic sections;
+- expose current `data-cinematic-phase` on `.experience-shell` for deterministic QA;
+- ChapterSection may expose its index/scene/id only as data attributes; narrative remains real text.
 
-- [ ] **Step 1: Add RED DOM assertions**
+- [ ] **Step 1: Write RED DOM tests**
 
-Assert active chapter/phase attributes are present, all ten sections remain in the DOM, the sound control is keyboard reachable, and no Canvas-only copy is required.
+Render `ChapterSection` with a known chapter and assert its heading/body/cue/clock remain visible and `data-chapter-id`/scene class remain correct. Render `ExperienceShell` with `ExperienceCanvas` mocked to a harmless div and assert `data-cinematic-phase` exists, skip link exists, and sound button remains keyboard-addressable.
 
 - [ ] **Step 2: Run RED**
 
-Run: `npm run test:run -- tests/experience-v2.test.tsx`
-Expected: FAIL for new V2 state attributes.
+`npm run test:run -- tests/chapter-section-v2.test.tsx`
 
-- [ ] **Step 3: Apply CSS/DOM polish**
+- [ ] **Step 3: Implement scroll-derived phase exposure + CSS polish**
 
 Requirements:
-- stronger editorial scale and chapter-specific copy placement while keeping authored copy unchanged;
-- transition-aware copy opacity/translate driven by CSS custom properties or data attributes, not timers;
-- preserve minimum 320px layout;
-- at <=760px use bottom-weighted readable copy and suppress expensive decorative layers;
-- in `prefers-reduced-motion: reduce`, remove grain animation, scroll smoothing, transform-driven copy motion, and nonessential transition effects.
+- stronger editorial scale/composition without copying reference CSS/source;
+- phase-aware copy opacity/translate from data/CSS variables, never timers;
+- keep 320px minimum layout;
+- <=760px: bottom-weighted readable copy, reachable controls, reduced decorative cost;
+- `prefers-reduced-motion`: no grain animation, smooth scrolling, or transform-driven copy choreography.
 
-- [ ] **Step 4: Run GREEN and accessibility smoke tests**
+- [ ] **Step 4: Verify and commit**
 
-Run: `npm run test:run && npm run build`
-Expected: PASS.
-
-- [ ] **Step 5: Commit**
+`npm run test:run -- tests/chapter-section-v2.test.tsx && npm run build`
 
 ```bash
-git add src/styles/global.css src/components/ChapterSection.tsx src/app/ExperienceShell.tsx tests/experience-v2.test.tsx
+git add src/styles/global.css src/components/ChapterSection.tsx src/app/ExperienceShell.tsx tests/chapter-section-v2.test.tsx
 git commit -m "feat: polish V2 narrative staging"
 ```
 
 ---
 
-### Task 12: Playwright desktop/mobile/reduced-motion/alternate-route QA and visual checkpoints
+### Task 12: Playwright desktop/mobile/reduced-motion browser QA and visual checkpoints
 
 **Files:**
 - Create: `tests/e2e/v2-experience.spec.ts`
 - Modify: `playwright.config.ts`
 - Keep: `tests/e2e/experience.spec.ts`
 
-**Interfaces:**
-- Add Playwright projects:
-  - `chromium-desktop`
-  - `chromium-mobile` using `devices['Pixel 7']`
-  - reduced-motion is a test-level `page.emulateMedia({ reducedMotion: 'reduce' })`, not a separate browser binary.
+**Projects:**
+- `chromium-desktop` = Desktop Chrome.
+- `chromium-mobile` = `devices['Pixel 7']`.
+- Reduced-motion uses `page.emulateMedia({ reducedMotion: 'reduce' })` inside a test.
 
-- [ ] **Step 1: Add desktop/mobile/reduced-motion tests**
+- [ ] **Step 1: Add browser tests**
 
-Each test must capture `pageerror` and console `error`, visit `/`, verify 10 chapters, traverse all chapters, and assert no breaking errors. Mobile verifies sound control reachability and final chapter visibility. Reduced-motion checks the shell exposes reduced-motion quality/state and still reaches the epilogue.
+Each path captures both `pageerror` and console messages of type `error`, opens `/`, verifies main + ten chapters, traverses the full scroll, and expects zero breaking errors. Desktop verifies the black-hole `elsewhere` chapter. Mobile verifies final chapter and sound control reachability. Reduced-motion verifies full journey reachability and a lower-motion phase state.
 
-- [ ] **Step 2: Add deterministic screenshot checkpoints for human review**
+- [ ] **Step 2: Add deterministic human-review screenshots**
 
-At stable scroll positions capture:
+Capture stable scroll checkpoints named:
 - `dust-settle.png`
 - `collapse-late.png`
 - `fusion-after.png`
@@ -703,12 +799,13 @@ At stable scroll positions capture:
 - `white-dwarf.png`
 - `black-hole.png`
 
-Store them as Playwright run artifacts, not committed golden images. Do not use pixel-diff assertions in V2.
+Attach them as Playwright run artifacts; do not commit pixel-golden baselines in V2.
 
-- [ ] **Step 3: Run browser RED/GREEN locally**
+- [ ] **Step 3: Run browser suite**
 
-Run: `npx playwright install chromium && npm run test:e2e`
-Expected after implementation: all configured Chromium projects PASS with no page/console breaking errors.
+`npx playwright install chromium && npm run test:e2e`
+
+Expected: all configured Chromium paths PASS with zero page/console breaking errors.
 
 - [ ] **Step 4: Commit**
 
@@ -719,54 +816,46 @@ git commit -m "test: add V2 browser and visual QA"
 
 ---
 
-### Task 13: Preserve deploy gates and add V2 pre-deploy verification
+### Task 13: Preserve deployment compatibility and add deterministic predeploy gate
 
 **Files:**
 - Modify: `.github/workflows/deploy-pages.yml`
 - Modify: `tests/core/github-pages-config.test.ts`
 - Modify: `README.md`
 
-**Interfaces:**
-- Existing exact Pages guard remains unchanged in meaning.
-- Add a deterministic predeploy command in `package.json` only if the preceding test suite proves stable; otherwise keep workflow commands explicit.
+- [ ] **Step 1: Extend Pages regression test first**
 
-- [ ] **Step 1: Extend the Pages config regression test first**
-
-Assert workflow still contains:
+Keep assertions for:
 - `VITE_BASE_PATH: /cosmic-dust-journey/`
-- production `npm run build`
+- `npm run build`
 - `Verify Pages artifact`
 - positive `/cosmic-dust-journey/assets/` grep
 - negative `/src/main.tsx` grep
 
-Also assert the workflow runs `npm run test:core` before uploading the Pages artifact.
+Add an assertion that `npm run test:core` occurs before artifact upload.
 
 - [ ] **Step 2: Run RED**
 
-Run: `node --experimental-strip-types --test tests/core/github-pages-config.test.ts`
-Expected: FAIL because workflow does not yet run `test:core`.
+`node --experimental-strip-types --test tests/core/github-pages-config.test.ts`
 
-- [ ] **Step 3: Add deterministic core gate before build/upload**
+Expected: FAIL because the workflow does not yet call `test:core`.
 
-Insert:
+- [ ] **Step 3: Add exact deterministic core gate**
 
 ```yaml
 - name: Core regression tests
   run: npm run test:core
 ```
 
-Do not make Playwright a blocking Pages deploy gate in this task; browser CI may be added separately only after repeatability is demonstrated.
+Place it after dependency install and before build/upload. Do not make Playwright a Pages blocking gate until repeated CI runs prove it stable.
 
-- [ ] **Step 4: Update README V2 behavior/deploy notes**
+- [ ] **Step 4: Update README**
 
-Document cinematic director, adaptive runtime quality, reduced-motion path, scene-aware sound, visual QA, and unchanged Vercel/Cloudflare root-base deployment.
+Document V2 cinematic director, adaptive runtime quality, reduced-motion route, scene-aware audio, visual QA, and unchanged Vercel/Cloudflare root-base configuration.
 
-- [ ] **Step 5: Run GREEN/full check**
+- [ ] **Step 5: Verify and commit**
 
-Run: `npm run test:core && npm run check`
-Expected: PASS.
-
-- [ ] **Step 6: Commit**
+`npm run test:core && npm run check`
 
 ```bash
 git add .github/workflows/deploy-pages.yml tests/core/github-pages-config.test.ts README.md
@@ -775,17 +864,11 @@ git commit -m "ci: gate V2 Pages deploy on core regressions"
 
 ---
 
-### Task 14: Final exact-head verification, review, PR, and merge gate
+### Task 14: Exact-head release verification, PR, visual review, and merge
 
-**Files:**
-- No implementation files unless verification exposes a defect.
-- Review spec: `docs/superpowers/specs/2026-09-04-v2-cinematic-fidelity-design.md`
-- Review plan: `docs/superpowers/plans/2026-09-04-v2-cinematic-fidelity.md`
+**Files:** no planned production edits; fix any discovered defect in its owning module and rerun the affected gate.
 
-**Interfaces:**
-- Final carrier: `feature/v2-cinematic-fidelity`.
-
-- [ ] **Step 1: Run full fresh verification on exact branch head**
+- [ ] **Step 1: Fresh exact-head commands**
 
 ```bash
 npm run test:core
@@ -796,20 +879,30 @@ git diff --check main...HEAD
 
 Expected: zero failures/errors.
 
-- [ ] **Step 2: Verify V2 success criteria against implementation**
+- [ ] **Step 2: Check every spec success criterion**
 
-Check all ten items from spec section 16 explicitly: chapter camera choreography, richer transitions, eight scene-family visual upgrades, bounded interactions, reduced-motion/mobile coherence, adaptive quality, deterministic core coverage, Playwright coverage, multi-host compatibility, clean-room compliance.
+Explicitly verify:
+1. distinct authored camera choreography for every major stellar phase;
+2. transitions materially richer than V1 crossfade-only behavior;
+3. all eight scene families upgraded;
+4. interactions bounded/optional/scene-semantic;
+5. reduced-motion and mobile coherent;
+6. runtime quality reduces rendering cost without narrative changes;
+7. deterministic choreography/quality core tests present;
+8. Playwright covers desktop/mobile/reduced-motion/black-hole path;
+9. GitHub Pages/Vercel/Cloudflare build compatibility preserved;
+10. clean-room constraint preserved.
 
 - [ ] **Step 3: Human visual review**
 
-Review the eight Playwright checkpoint screenshots. Treat visible clipping, unreadable copy, scene discontinuity, excessive bloom, severe aliasing, or mobile obstruction as blockers and fix them on the branch before PR approval.
+Review all eight screenshots. Treat clipping, unreadable copy, transition discontinuity, excessive bloom/fringe, severe aliasing, or obstructed mobile controls as blockers.
 
-- [ ] **Step 4: Open PR to `main` and inspect exact-head CI**
+- [ ] **Step 4: Open PR to `main`**
 
-PR title: `V2 cinematic fidelity and visual upgrade`.
+Title: `V2 cinematic fidelity and visual upgrade`
 
-PR body must summarize A fidelity + B visual upgrade + C production quality, list the exact verification commands/results, and state that no proprietary reference source/assets were copied.
+Body includes A fidelity + B visual upgrade + C production quality, exact verification results, visual-review status, and clean-room statement.
 
-- [ ] **Step 5: Merge only after exact PR head is green and visual review is approved**
+- [ ] **Step 5: Merge only on exact-head green + approved visual review**
 
-Use squash merge. Do not force/bypass. After merge, verify the GitHub Pages deployment for the resulting `main` SHA reaches success and its artifact still passes the base-path guard.
+Squash merge; no force/bypass. After merge, verify the GitHub Pages workflow for the resulting `main` SHA reaches success and its artifact still passes the base-path guard.
