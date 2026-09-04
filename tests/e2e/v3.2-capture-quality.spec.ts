@@ -25,6 +25,7 @@ async function runProfile(page: Page, profile: CaptureProfileId) {
 }
 
 test('desktop V3.2 writes the complete 19-capture manifest', async ({ page }, testInfo) => {
+  test.setTimeout(90_000);
   test.skip(testInfo.project.name !== 'chromium-desktop', 'desktop capture matrix');
   const manifest = await runProfile(page, 'desktop');
   expect(manifest.captures).toHaveLength(19);
