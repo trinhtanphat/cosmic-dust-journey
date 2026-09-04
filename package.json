@@ -1,7 +1,7 @@
 {
   "name": "cosmic-dust-journey",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.1.0",
   "type": "module",
   "engines": {
     "node": ">=20.19.0 || >=22.12.0"
@@ -21,10 +21,12 @@
     "check": "npm run typecheck && npm run lint && npm run test:run && npm run build",
     "test:core": "node --experimental-strip-types --test tests/core/*.test.ts",
     "preview": "vite preview",
-    "check:core": "npm run test:core && node scripts/build-provenance-manifest.mjs"
+    "check:core": "npm run test:core && node scripts/build-provenance-manifest.mjs",
+    "diagnostics:summary": "node --experimental-strip-types scripts/write-performance-summary.mjs v2.1-diagnostics"
   },
   "dependencies": {
     "@react-three/fiber": "^9.7.0",
+    "@sentry/browser": "^10.73.0",
     "gsap": "^3.15.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

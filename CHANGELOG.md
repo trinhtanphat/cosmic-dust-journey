@@ -2,6 +2,31 @@
 
 All notable changes to Cosmic Dust Journey are documented here.
 
+## 2.1.0 — 2026-09-04
+
+### Production observability
+- Added a provider-neutral `ObservabilityHub` with bounded sanitized local events and constant-memory diagnostics.
+- Kept local-only telemetry as the default and added opt-in Sentry, Plausible, and GA4 adapters.
+- Added DNT/Global Privacy Control suppression for analytics providers and independent circuit breakers for provider failures.
+- External adapters never receive raw pointer coordinates, narrative text, URL query/hash data, user identifiers, or browser-storage values.
+
+### Performance diagnostics
+- Reused the existing React Three Fiber frame callback as the single frame stream for both adaptive quality and diagnostics.
+- Added frame-time percentiles, long-task aggregates, adaptive-level timing, WebGL/error/audio counters, chapter coverage, and optional heap-growth reporting.
+- Added machine-readable desktop/mobile diagnostics plus a human-readable CI summary with stable hard-fail gates and conservative performance warnings.
+
+### Failure recovery
+- Added renderer-only React error isolation so the semantic narrative remains available when the visual subsystem fails.
+- Added bounded WebGL context-loss recovery: one restore attempt, then session fallback on a second loss or timeout.
+- Hardened WebAudio lifecycle handling, idempotent disposal, and suspension/interruption observation without autoplay.
+
+### QA and deployment
+- Added Playwright coverage for privacy defaults, DNT/GPC, desktop/mobile diagnostics, WebGL startup fallback, bounded context recovery, and muted-audio consent.
+- Preserved the existing eight V2 visual checkpoints and GitHub Pages artifact guards.
+- Added `.env.example` with placeholder-only telemetry configuration. No real provider identifiers or secrets are committed.
+
+> Release metadata is prepared as version `2.1.0`. A Git tag or GitHub Release object must not be assumed unless it is created separately.
+
 ## 2.0.0 — 2026-09-04
 
 ### Cinematic fidelity

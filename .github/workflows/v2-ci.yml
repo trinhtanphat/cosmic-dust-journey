@@ -14,18 +14,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
       - name: Upgrade npm
         run: npm install -g npm@11 --no-audit --no-fund
-
       - name: Install dependencies
         run: npm install --legacy-peer-deps --no-audit --no-fund
-
       - name: Full static and unit checks
         run: npm run check
 
@@ -34,30 +30,27 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
       - name: Upgrade npm
         run: npm install -g npm@11 --no-audit --no-fund
-
       - name: Install dependencies
         run: npm install --legacy-peer-deps --no-audit --no-fund
-
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-
       - name: Browser and visual QA
         run: npm run test:e2e
-
+      - name: Summarize V2.1 diagnostics
+        run: npm run diagnostics:summary
       - name: Upload Playwright results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: v2-playwright-results
           path: |
+            v2.1-diagnostics
             visual-checkpoints
             test-results
           if-no-files-found: ignore
