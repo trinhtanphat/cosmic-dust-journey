@@ -11,7 +11,7 @@ export const chapters: readonly Chapter[] = [
     interactionCue: 'Move through the dust. Click to send a pressure wave.',
     clockLabel: 'Before the clock',
     scene: 'dust',
-    scrollLength: 1.2,
+    scrollLength: 1.3,
     sourceProvenance: authored('Original clean-room narrative based on standard stellar-evolution concepts.'),
   },
   {
@@ -22,7 +22,7 @@ export const chapters: readonly Chapter[] = [
     interactionCue: 'Your pointer becomes a small local pull.',
     clockLabel: '−1 million years',
     scene: 'dust',
-    scrollLength: 1.1,
+    scrollLength: 1.15,
     sourceProvenance: authored('Original explanatory text.'),
   },
   {
@@ -33,7 +33,7 @@ export const chapters: readonly Chapter[] = [
     interactionCue: 'Sweep across the cloud to bend nearby trajectories.',
     clockLabel: 'Approaching ignition',
     scene: 'collapse',
-    scrollLength: 1.35,
+    scrollLength: 1.45,
     sourceProvenance: authored('Original explanatory text.'),
   },
   {
@@ -44,7 +44,7 @@ export const chapters: readonly Chapter[] = [
     interactionCue: 'Pass through the flash as fusion stabilizes the core.',
     clockLabel: 'Fusion begins',
     scene: 'fusion',
-    scrollLength: 0.95,
+    scrollLength: 0.9,
     sourceProvenance: authored('Original explanatory text.'),
   },
   {
@@ -55,7 +55,7 @@ export const chapters: readonly Chapter[] = [
     interactionCue: 'Move near the star to push the surrounding dust outward.',
     clockLabel: '+5 billion years',
     scene: 'main-sequence',
-    scrollLength: 1.7,
+    scrollLength: 1.8,
     sourceProvenance: authored('Original explanatory text.'),
   },
   {
@@ -66,7 +66,7 @@ export const chapters: readonly Chapter[] = [
     interactionCue: 'Watch the inner system disappear inside the expanding envelope.',
     clockLabel: '+10 billion years',
     scene: 'red-giant',
-    scrollLength: 1.35,
+    scrollLength: 1.45,
     sourceProvenance: authored('Original explanatory text.'),
   },
   {
@@ -77,7 +77,7 @@ export const chapters: readonly Chapter[] = [
     interactionCue: 'Follow each shell as it drifts away from the remnant.',
     clockLabel: 'A brief luminous aftermath',
     scene: 'nebula',
-    scrollLength: 1.35,
+    scrollLength: 1.5,
     sourceProvenance: authored('Original explanatory text.'),
   },
   {
@@ -88,7 +88,7 @@ export const chapters: readonly Chapter[] = [
     interactionCue: 'Motion quiets as the remnant cools.',
     clockLabel: 'Cooling for ages',
     scene: 'white-dwarf',
-    scrollLength: 1.2,
+    scrollLength: 1.25,
     sourceProvenance: authored('Original explanatory text.'),
   },
   {
@@ -99,7 +99,7 @@ export const chapters: readonly Chapter[] = [
     interactionCue: 'Disturb the accretion disk with your pointer.',
     clockLabel: 'An alternate ending',
     scene: 'black-hole',
-    scrollLength: 1.35,
+    scrollLength: 1.4,
     sourceProvenance: authored('Original explanatory text.'),
   },
   {
@@ -110,7 +110,7 @@ export const chapters: readonly Chapter[] = [
     interactionCue: 'Scroll back through the lifetime or leave the remnant drifting.',
     clockLabel: 'The cycle continues',
     scene: 'dust',
-    scrollLength: 1,
+    scrollLength: 1.2,
     sourceProvenance: authored('Original closing text.'),
   },
 ] as const;

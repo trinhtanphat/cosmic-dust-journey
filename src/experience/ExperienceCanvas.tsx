@@ -13,6 +13,7 @@ import { interactionImpulse } from './interactions';
 import PostProcessingRig from './PostProcessingRig';
 import { createRuntimeQualityState } from './runtimeQuality';
 import { useExperienceStore } from './store';
+import { resolveVisualContinuity } from './visualContinuity';
 import WebGLRecoveryBoundary from './WebGLRecoveryBoundary';
 
 function FrameQualityProbe() {
@@ -63,6 +64,7 @@ export default function ExperienceCanvas({
   const setImpulse = useExperienceStore((state) => state.setImpulse);
   const chapter = chapters[Math.max(0, chapterIndex)] ?? chapters[0];
   const scene = chapter?.scene ?? 'dust';
+  const continuity = resolveVisualContinuity({ chapterIndex, localProgress, reducedMotion: quality.reducedMotion });
   const cinematicState = resolveCinematicState({
     chapterId: chapter?.id ?? 'overture',
     scene,
@@ -70,6 +72,7 @@ export default function ExperienceCanvas({
     pointer,
     quality,
     adaptiveLevel,
+    continuity,
   });
   const cameraPose = sampleGlobalCameraSpline({
     chapterIndex,

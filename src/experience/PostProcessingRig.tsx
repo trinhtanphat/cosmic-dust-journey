@@ -8,10 +8,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import type { PostFxState } from './postfx';
 
 const fringeShader = {
-  uniforms: {
-    tDiffuse: { value: null },
-    amount: { value: 0 },
-  },
+  uniforms: { tDiffuse: { value: null }, amount: { value: 0 } },
   vertexShader: `
     varying vec2 vUv;
     void main() {
@@ -35,8 +32,19 @@ const fringeShader = {
   `,
 };
 
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
+
 export default function PostProcessingRig({ state }: { state: PostFxState }) {
   const { gl, scene, camera, size } = useThree();
+  const safeState = useMemo(() => ({
+    ...state,
+    bloomStrength: clamp(state.bloomStrength, 0, 1.45),
+    bloomRadius: clamp(state.bloomRadius, 0, 0.72),
+    bloomThreshold: clamp(state.bloomThreshold, 0.32, 1),
+    exposure: clamp(state.exposure, 0.78, 1.28),
+    chromaticFringe: clamp(state.chromaticFringe, 0, 0.12),
+  }), [state]);
   const pipeline = useMemo(() => {
     const composer = new EffectComposer(gl);
     const renderPass = new RenderPass(scene, camera);
@@ -56,14 +64,14 @@ export default function PostProcessingRig({ state }: { state: PostFxState }) {
 
   useFrame(() => {
     const { composer, bloomPass, fringePass } = pipeline;
-    gl.toneMappingExposure = state.enabled ? state.exposure : 1;
-    bloomPass.enabled = state.enabled && state.bloomStrength > 0.001;
-    bloomPass.strength = state.bloomStrength;
-    bloomPass.radius = state.bloomRadius;
-    bloomPass.threshold = state.bloomThreshold;
-    fringePass.enabled = state.enabled && state.chromaticFringe > 0.001;
-    fringePass.uniforms.amount.value = state.chromaticFringe;
-    if (state.enabled) composer.render();
+    gl.toneMappingExposure = safeState.enabled ? safeState.exposure : 1;
+    bloomPass.enabled = safeState.enabled && safeState.bloomStrength > 0.001;
+    bloomPass.strength = safeState.bloomStrength;
+    bloomPass.radius = safeState.bloomRadius;
+    bloomPass.threshold = safeState.bloomThreshold;
+    fringePass.enabled = safeState.enabled && safeState.chromaticFringe > 0.001;
+    fringePass.uniforms.amount.value = safeState.chromaticFringe;
+    if (safeState.enabled) composer.render();
     else gl.render(scene, camera);
   }, 1);
 

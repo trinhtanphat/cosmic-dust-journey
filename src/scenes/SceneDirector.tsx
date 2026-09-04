@@ -39,7 +39,7 @@ export default function SceneDirector({ cinematicState }: { cinematicState: Cine
   const currentScene = chapter.scene;
   const nextScene = nextChapter.scene;
   const { transition, budget, profile } = cinematicState;
-  const continuity = resolveVisualContinuity({
+  const continuity = cinematicState.continuity ?? resolveVisualContinuity({
     chapterIndex,
     localProgress: progress,
     reducedMotion: quality.reducedMotion,
@@ -55,16 +55,7 @@ export default function SceneDirector({ cinematicState }: { cinematicState: Cine
 
   if (currentScene === nextScene) {
     return (
-      <Current
-        model={currentModel}
-        progress={progress}
-        opacity={1}
-        pointer={pointer}
-        impulse={impulse}
-        cinematic={transition}
-        continuity={continuity}
-        reducedMotion={quality.reducedMotion}
-      />
+      <Current model={currentModel} progress={progress} opacity={1} pointer={pointer} impulse={impulse} cinematic={transition} continuity={continuity} reducedMotion={quality.reducedMotion} />
     );
   }
 
@@ -76,27 +67,9 @@ export default function SceneDirector({ cinematicState }: { cinematicState: Cine
 
   return (
     <>
-      <Current
-        model={currentModel}
-        progress={progress}
-        opacity={currentOpacity}
-        pointer={pointer}
-        impulse={impulse}
-        cinematic={transition}
-        continuity={continuity}
-        reducedMotion={quality.reducedMotion}
-      />
+      <Current model={currentModel} progress={progress} opacity={currentOpacity} pointer={pointer} impulse={impulse} cinematic={transition} continuity={continuity} reducedMotion={quality.reducedMotion} />
       {incomingOpacity > 0.001 && (
-        <Next
-          model={nextModel}
-          progress={incomingProgress}
-          opacity={incomingOpacity}
-          pointer={pointer}
-          impulse={impulse}
-          cinematic={transition}
-          continuity={continuity}
-          reducedMotion={quality.reducedMotion}
-        />
+        <Next model={nextModel} progress={incomingProgress} opacity={incomingOpacity} pointer={pointer} impulse={impulse} cinematic={transition} continuity={continuity} reducedMotion={quality.reducedMotion} />
       )}
     </>
   );
