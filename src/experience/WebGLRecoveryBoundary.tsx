@@ -1,5 +1,5 @@
 import { useThree } from '@react-three/fiber';
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 
 export default function WebGLRecoveryBoundary({
   onContextLost,
@@ -10,7 +10,7 @@ export default function WebGLRecoveryBoundary({
 }) {
   const gl = useThree((state) => state.gl);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const canvas = gl.domElement;
     const lost = (event: Event) => {
       event.preventDefault();
