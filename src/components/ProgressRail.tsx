@@ -2,10 +2,10 @@ import { chapters } from '../content/chapters';
 import { useExperienceStore } from '../experience/store';
 
 export interface ProgressRailProps {
-  onNavigate(chapterId: string): void;
+  onNavigate?(chapterId: string): void;
 }
 
-export default function ProgressRail({ onNavigate }: ProgressRailProps) {
+export default function ProgressRail({ onNavigate = () => undefined }: ProgressRailProps) {
   const activeIndex = useExperienceStore((state) => state.chapterIndex);
   const progress = useExperienceStore((state) => state.globalProgress);
 
