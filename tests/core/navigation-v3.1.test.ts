@@ -7,8 +7,14 @@ import {
   progressToScrollY,
   scrollYToProgress,
 } from '../../src/experience/navigation.ts';
-import { chapterTimeline } from '../../src/experience/chapterRegistry.ts';
+import type { TimelineChapter } from '../../src/experience/timeline.ts';
 
+const chapterTimeline: readonly TimelineChapter[] = [
+  { id: 'overture', index: 0, start: 0, end: 0.2, length: 1 },
+  { id: 'cold-cloud', index: 1, start: 0.2, end: 0.45, length: 1.25 },
+  { id: 'red-giant', index: 2, start: 0.45, end: 0.75, length: 1.5 },
+  { id: 'epilogue', index: 3, start: 0.75, end: 1, length: 1.25 },
+];
 const ids = chapterTimeline.map((chapter) => chapter.id);
 
 test('canonical chapter hashes round-trip only known ids', () => {
@@ -20,7 +26,7 @@ test('canonical chapter hashes round-trip only known ids', () => {
 
 test('chapter lookup returns normalized start and unknown ids fail closed', () => {
   assert.equal(chapterStartProgress(chapterTimeline, 'overture'), 0);
-  assert.ok((chapterStartProgress(chapterTimeline, 'red-giant') ?? -1) > 0);
+  assert.equal(chapterStartProgress(chapterTimeline, 'red-giant'), 0.45);
   assert.equal(chapterStartProgress(chapterTimeline, 'missing'), null);
 });
 

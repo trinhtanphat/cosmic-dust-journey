@@ -18,7 +18,7 @@
     "crawl:reference": "node scripts/crawl-reference.mjs",
     "inspect:assets": "node scripts/inspect-public-assets.mjs",
     "provenance": "node scripts/build-provenance-manifest.mjs",
-    "check": "npm run typecheck && npm run lint && npm run test:run && npm run build",
+    "check": "npm run typecheck && npm run lint && npm run test:core && npm run test:run && npm run build",
     "test:core": "node --experimental-strip-types --test tests/core/*.test.ts",
     "preview": "vite preview",
     "check:core": "npm run test:core && node scripts/build-provenance-manifest.mjs",
