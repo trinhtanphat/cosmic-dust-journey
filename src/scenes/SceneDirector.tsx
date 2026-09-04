@@ -63,6 +63,7 @@ export default function SceneDirector({ cinematicState }: { cinematicState: Cine
         impulse={impulse}
         cinematic={transition}
         continuity={continuity}
+        reducedMotion={quality.reducedMotion}
       />
     );
   }
@@ -83,6 +84,7 @@ export default function SceneDirector({ cinematicState }: { cinematicState: Cine
         impulse={impulse}
         cinematic={transition}
         continuity={continuity}
+        reducedMotion={quality.reducedMotion}
       />
       {incomingOpacity > 0.001 && (
         <Next
@@ -93,6 +95,7 @@ export default function SceneDirector({ cinematicState }: { cinematicState: Cine
           impulse={impulse}
           cinematic={transition}
           continuity={continuity}
+          reducedMotion={quality.reducedMotion}
         />
       )}
     </>

@@ -4,8 +4,10 @@ export const diskVertexShader = /* glsl */ `
   uniform float uTime;
   uniform float uDisturbance;
   uniform float uWarp;
+  uniform float uLensing;
   uniform vec2 uPointer;
   uniform float uQualityScale;
+  uniform float uSecondaryDistortion;
   varying vec2 vUv;
   varying float vWave;
   varying float vRadius;
@@ -21,9 +23,12 @@ export const diskVertexShader = /* glsl */ `
     float fine = qsValueNoise(vec3(angle * 1.7, radius * 0.8, uTime * 0.18)) - 0.5;
     float wave = sin(angle * 10.0 - uTime * 3.0 + radius * 2.0) * 0.08;
     wave += fine * 0.09 * uQualityScale;
+    float center = 1.0 - smoothstep(1.25, 5.2, radius);
+    float boundedLens = clamp(uLensing * center, 0.0, 1.0);
     p.z += wave * (0.4 + localDisturbance) + sin(angle * 2.0 + uTime) * uWarp * 0.08;
+    p.z += sin(angle * 3.0 - uTime * 0.7) * boundedLens * 0.035 * uSecondaryDistortion;
     float squeeze = 1.0 + uWarp * 0.035 * sin(angle * 2.0);
-    p.xy *= squeeze;
+    p.xy *= squeeze * (1.0 + boundedLens * 0.06);
     vWave = wave;
     vRadius = radius;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
@@ -34,6 +39,10 @@ export const diskFragmentShader = /* glsl */ `
   uniform float uTime;
   uniform float uOpacity;
   uniform float uWarp;
+  uniform float uLensing;
+  uniform float uInnerTemperature;
+  uniform float uOuterTemperature;
+  uniform float uBrightnessSkew;
   varying vec2 vUv;
   varying float vWave;
   varying float vRadius;
@@ -41,12 +50,15 @@ export const diskFragmentShader = /* glsl */ `
     float radial = abs(vUv.y - 0.5) * 2.0;
     float bands = 0.55 + 0.45 * sin(vUv.x * 42.0 - uTime * 2.8 + vWave * 18.0);
     float innerBoost = smoothstep(5.2, 1.25, vRadius);
-    float lensBoost = 1.0 + uWarp * innerBoost * 0.55;
+    float lensBoost = 1.0 + uLensing * innerBoost * 0.55;
+    float orbitalSide = sin(vUv.x * 6.2831853 - uTime * 0.55);
+    float brightness = 1.0 + orbitalSide * uBrightnessSkew;
     float alpha = smoothstep(1.0, 0.15, radial) * (0.32 + bands * 0.68) * uOpacity * lensBoost;
-    vec3 hot = vec3(1.0, 0.84, 0.55);
-    vec3 warm = vec3(0.95, 0.18, 0.035);
-    vec3 color = mix(hot, warm, radial * 0.88 + (1.0 - bands) * 0.22);
-    color *= 1.0 + innerBoost * uWarp * 0.28;
+    vec3 hot = mix(vec3(1.0, 0.62, 0.25), vec3(1.0, 0.92, 0.72), uInnerTemperature);
+    vec3 warm = mix(vec3(0.58, 0.07, 0.02), vec3(0.98, 0.25, 0.04), uOuterTemperature);
+    float temperatureMix = clamp(radial * 0.88 + (1.0 - bands) * 0.22 - orbitalSide * 0.08, 0.0, 1.0);
+    vec3 color = mix(hot, warm, temperatureMix);
+    color *= brightness * (1.0 + innerBoost * uWarp * 0.28);
     gl_FragColor = vec4(color, clamp(alpha, 0.0, 1.0));
   }
 `;

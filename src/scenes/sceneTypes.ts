@@ -11,4 +11,5 @@ export interface SceneProps {
   impulse: LiveImpulse;
   cinematic: TransitionState;
   continuity?: VisualContinuityState;
+  reducedMotion?: boolean;
 }
